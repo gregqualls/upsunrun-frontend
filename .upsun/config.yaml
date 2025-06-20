@@ -20,3 +20,8 @@ applications:
           root: public
           passthru: true
           index: [index.html]
+
+routes:
+  "https://{default}/":
+    type: upstream
+    upstream: app:http
