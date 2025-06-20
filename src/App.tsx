@@ -69,7 +69,7 @@ function App() {
   const [score, setScore] = useState(0)
   const gameRef = useRef<HTMLDivElement>(null)
   const nextTaskId = useRef(0)
-  // const [animatingTaskId, setAnimatingTaskId] = useState<number | null>(null)
+  const [animatingTaskId, setAnimatingTaskId] = useState<number | null>(null)
   const [branchLines, setBranchLines] = useState<BranchLine[]>([])
 
   // Animate falling tasks and scrolling branch lines
@@ -161,6 +161,11 @@ function App() {
       const updated = [...prev]
       const task = updated[idx]
       const newProgress = task.progress + 1
+      
+      // Restore the animation trigger
+      setAnimatingTaskId(task.id);
+      setTimeout(() => setAnimatingTaskId(null), 200);
+
       let newTask = { ...task }
 
       if (action === 'BRANCH') {
