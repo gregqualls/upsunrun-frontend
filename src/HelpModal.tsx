@@ -1,5 +1,5 @@
-import { createPortal } from 'react-dom';
 import './HelpModal.css';
+import { createPortal } from 'react-dom';
 
 interface HelpModalProps {
   isOpen: boolean;
@@ -19,27 +19,32 @@ const HelpModal = ({ isOpen, onClose }: HelpModalProps) => {
         </button>
         <h2>How to Play Upsun Run</h2>
         
-        <p>Your goal is to complete tasks as they fall. Different tasks require different actions. Don't let any task hit the bottom!</p>
+        <p>Your goal is to complete tasks by hitting the correct buttons as they fall. Don't let any task hit the bottom! Watch the <strong>CLI display</strong> at the top to see your commands execute.</p>
+        
+        <h3>Game Modes</h3>
+        <ul>
+          <li><strong>Easy Mode:</strong> The standard experience.</li>
+          <li><strong>Hard Mode:</strong> Tasks fall twice as fast, but you get double the points! You can only change modes before starting a game.</li>
+        </ul>
 
         <h3>Task Types</h3>
         <ul>
           <li><strong>FEATURE (Purple):</strong> Represents a new feature. Requires you to BRANCH, CODE, and then MERGE.</li>
-          <li><strong>BUG (Red):</strong> A bug fix. Similar to a feature but falls faster! Requires BRANCH, CODE, and MERGE.</li>
-          <li><strong>TRAFFIC (Blue/Orange):</strong> A production issue. First, hit METRICS to see the problem, then SCALE UP or SCALE DOWN as required.</li>
+          <li><strong>BUG (Red):</strong> A bug fix. Falls faster than features! Requires BRANCH, CODE, and MERGE.</li>
+          <li><strong>TRAFFIC (Blue):</strong> A production issue. First, hit METRICS. This will reveal if you need to SCALE UP (Green) or SCALE DOWN (Red).</li>
         </ul>
 
         <h3>Core Actions</h3>
         <ul>
-          <li><strong>BRANCH:</strong> Moves a task from the 'main' lane to a new development lane. Has a 1-second build time.</li>
-          <li><strong>CODE:</strong> Your main action! Click this rapidly to complete the coding step for features and bugs. The block's color will become more solid as you progress.</li>
-          <li><strong>MERGE:</strong> Moves a completed feature or bug fix back to the main lane to score a point. Has a 1-second build time.</li>
-          <li><strong>METRICS / SCALE:</strong> Use METRICS to diagnose a traffic issue, then use SCALE UP or SCALE DOWN to fix it. Scaling has a 1-second build time.</li>
+          <li><strong>BRANCH/MERGE:</strong> These actions have a 1-second "build time" where they will pulse before completing.</li>
+          <li><strong>METRICS:</strong> Has a 1-second "analyzing" time before revealing the required scale action.</li>
+          <li><strong>CODE:</strong> Your main action! Click this rapidly for features and bugs. The block's color will become more solid as you progress.</li>
         </ul>
 
         <h3>Special Actions</h3>
         <ul>
-            <li><strong>PROFILE:</strong> A 10-second boost that cuts the required 'CODE' clicks in half. Has a 10-second cooldown after use.</li>
-            <li><strong>PAUSE/RESUME:</strong> Toggles the game state.</li>
+            <li><strong>PROFILE:</strong> A 10-second boost that cuts the required 'CODE' clicks in half. The game area will glow green. This has a 10-second cooldown after use.</li>
+            <li><strong>PAUSE/RESUME:</strong> Toggles the game state. This modal also pauses the game.</li>
         </ul>
       </div>
     </div>
