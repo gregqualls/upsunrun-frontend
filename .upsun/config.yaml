@@ -1,6 +1,6 @@
 applications:
   app:
-    type: nodejs:22
+    type: nodejs:20
 
     build:
       flavor: none
