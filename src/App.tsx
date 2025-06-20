@@ -69,7 +69,7 @@ function App() {
   const [score, setScore] = useState(0)
   const gameRef = useRef<HTMLDivElement>(null)
   const nextTaskId = useRef(0)
-  const [animatingTaskId, setAnimatingTaskId] = useState<number | null>(null)
+  // const [animatingTaskId, setAnimatingTaskId] = useState<number | null>(null)
   const [branchLines, setBranchLines] = useState<BranchLine[]>([])
 
   // Animate falling tasks and scrolling branch lines
