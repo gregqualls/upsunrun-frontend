@@ -121,96 +121,65 @@ function App() {
   }
 
   return (
-    <div className="game-bg" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
-      {/* Game Title */}
-      <div style={{ color: '#fff', fontSize: 32, fontWeight: 900, textAlign: 'center', marginTop: 32, letterSpacing: 2, textShadow: '0 2px 12px #7c3aed99' }}>
-        Upsun Run
+    <div className="game-bg" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      {/* Game Title at the very top */}
+      <div className="game-title-top">Upsun Run</div>
+      {/* Centered game area and score */}
+      <div className="game-content">
+        <div className="game-score">Score: {score}</div>
+        <div
+          ref={gameRef}
+          className="game-area"
+        >
+          {/* Render all falling tasks */}
+          {tasks.map((task) => (
+            <div
+              key={task.id}
+              className={`task-block ${task.type} ${animatingTaskId === task.id ? 'task-animating' : ''}`}
+              style={{
+                left: task.x,
+                top: task.y,
+              }}
+            >
+              <div className="task-type">{task.type.toUpperCase()}</div>
+              <div>{task.requiredActions[task.progress]}</div>
+              <div className="task-progress">{task.progress+1}/{task.requiredActions.length}</div>
+            </div>
+          ))}
+          {gameOver && (
+            <div className="game-over">
+              Game Over<br />
+              <button onClick={handleReset} className="restart-btn">Restart</button>
+            </div>
+          )}
+        </div>
       </div>
-      {/* Score display */}
-      <div style={{ color: '#fff', fontSize: 22, fontWeight: 700, textAlign: 'center', marginTop: 12 }}>
-        Score: {score}
-      </div>
-      <div
-        ref={gameRef}
-        style={{
-          position: 'relative',
-          width: GAME_WIDTH,
-          height: GAME_HEIGHT,
-          margin: '40px auto',
-          background: 'rgba(30,32,40,0.95)',
-          borderRadius: 16,
-          overflow: 'hidden',
-          boxShadow: '0 0 24px #222',
-        }}
-      >
-        {/* Render all falling tasks */}
-        {tasks.map((task) => (
-          <div
-            key={task.id}
-            className={animatingTaskId === task.id ? 'task-animating' : ''}
-            style={{
-              position: 'absolute',
-              left: task.x,
-              top: task.y,
-              padding: '8px 16px',
-              minWidth: 60,
-              minHeight: 44,
-              background:
-                task.type === 'bug' ? '#e11d48' :
-                task.type === 'traffic' ? '#2563eb' :
-                '#7c3aed',
-              borderRadius: 16,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#fff',
-              fontWeight: 700,
-              fontSize: 16,
-              boxShadow: '0 2px 8px #0006',
-              userSelect: 'none',
-              flexDirection: 'column',
-              textAlign: 'center',
-              textShadow: '0 1px 4px #0008',
-              transition: 'transform 0.18s cubic-bezier(.4,2,.6,1)',
-            }}
-          >
-            <div style={{fontSize: 12, fontWeight: 400}}>{task.type.toUpperCase()}</div>
-            <div>{task.requiredActions[task.progress]}</div>
-            <div style={{fontSize: 10, marginTop: 2}}>{task.progress+1}/{task.requiredActions.length}</div>
-          </div>
-        ))}
-        {gameOver && (
-          <div style={{
-            position: 'absolute',
-            top: '40%',
-            left: 0,
-            width: '100%',
-            color: '#fff',
-            fontSize: 24,
-            fontWeight: 700,
-            textAlign: 'center',
-            background: 'rgba(0,0,0,0.5)',
-            padding: 16,
-            borderRadius: 8,
-          }}>
-            Game Over<br />
-            <button onClick={handleReset} style={{ marginTop: 12, padding: '8px 24px', fontSize: 18, borderRadius: 8, border: 'none', background: '#7c3aed', color: '#fff', fontWeight: 700 }}>Restart</button>
-          </div>
-        )}
-      </div>
-      {/* Action buttons */}
-      <div style={{ display: 'flex', justifyContent: 'center', gap: 16, marginBottom: 32 }}>
-        {ACTIONS.map((action) => (
-          <button
-            key={action}
-            className="hex-btn"
-            style={{ minWidth: 64, minHeight: 64 }}
-            disabled={!isRunning}
-            onClick={() => handleAction(action)}
-          >
-            {action}
-          </button>
-        ))}
+      {/* Action buttons at the bottom, two rows */}
+      <div className="action-buttons-rows">
+        <div className="action-row">
+          {['BRANCH', 'MERGE', 'SCALE'].map((action) => (
+            <button
+              key={action}
+              className="hex-btn"
+              disabled={!isRunning}
+              onClick={() => handleAction(action)}
+            >
+              {action}
+            </button>
+          ))}
+        </div>
+        <div className="action-row">
+          {['CODE', 'METRICS', 'PROFILE'].map((action) => (
+            <button
+              key={action}
+              className="hex-btn"
+              disabled={!isRunning}
+              onClick={() => handleAction(action)}
+            >
+              {action}
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   )

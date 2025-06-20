@@ -1,8 +1,13 @@
+html, body, #root {
+  background: #181a20;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden; /* Prevents all scrolling */
+}
+
 #root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+  display: flex; /* Simplified from previous version */
 }
 
 .logo {
@@ -42,7 +47,74 @@
 }
 
 .game-bg {
+  height: 100vh;
+  height: 100dvh; /* More robust for mobile */
+  width: 100vw;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
   background: #181a20;
+}
+
+/* Base Styles (Desktop First) */
+
+.game-title-top {
+  flex-shrink: 0;
+  width: 100%;
+  text-align: center;
+  padding: 24px 0 12px 0;
+  color: #fff;
+  font-size: 2rem;
+  font-weight: 900;
+  letter-spacing: 2px;
+  text-shadow: 0 2px 12px #7c3aed99;
+}
+
+.game-content {
+  flex: 1; /* This is the key: makes it fill available space */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 420px; /* Constrains width on desktop for phone-like view */
+  overflow: hidden;
+  margin: 0;
+}
+
+.game-score {
+  flex-shrink: 0;
+  margin-bottom: 8px;
+  color: #fff;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.game-area {
+  flex: 1; /* This is the key: makes it fill the .game-content space */
+  position: relative;
+  width: 100%;
+  background: rgba(30,32,40,0.95);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 0 24px #222;
+}
+
+.action-buttons-rows {
+  flex-shrink: 0;
+  width: 100%;
+  max-width: 420px;
+  padding: 16px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.action-row {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
 }
 
 .hex-btn {
@@ -51,38 +123,122 @@
   font-weight: 700;
   font-size: 0.92rem;
   border: none;
-  outline: none;
-  cursor: pointer;
   border-radius: 16px;
-  transition: background 0.2s, transform 0.13s cubic-bezier(.4,2,.6,1);
   box-shadow: 0 2px 8px #0006;
-  padding: 0 12px;
-  min-width: 64px;
-  min-height: 40px;
-  margin: 0 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  white-space: normal;
-  text-align: center;
-  word-break: break-word;
+  min-width: 80px;
+  min-height: 48px;
 }
 .hex-btn:active {
   background: #5b21b6;
   transform: scale(0.93);
 }
-.hex-btn:disabled {
-  background: #444;
-  color: #bbb;
-  cursor: not-allowed;
+
+.task-block {
+  position: absolute;
+  padding: 8px 16px;
+  min-width: 60px;
+  min-height: 44px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 700;
+  font-size: 16px;
+  box-shadow: 0 2px 8px #0006;
+  user-select: none;
+  flex-direction: column;
+  text-align: center;
+  text-shadow: 0 1px 4px #0008;
+  transition: transform 0.18s cubic-bezier(.4,2,.6,1);
+}
+.task-block.bug {
+  background: #e11d48;
+}
+.task-block.traffic {
+  background: #2563eb;
+}
+.task-block.feature {
+  background: #7c3aed;
+}
+.task-block .task-type {
+  font-size: 12px;
+  font-weight: 400;
+}
+.task-block .task-progress {
+  font-size: 10px;
+  margin-top: 2px;
 }
 
-/* Animation for task when attacked */
-.task-animating {
-  animation: task-bounce 0.18s cubic-bezier(.4,2,.6,1);
+.restart-btn {
+  margin-top: 12px;
+  padding: 8px 24px;
+  font-size: 1rem;
+  border-radius: 8px;
+  border: none;
+  background: #7c3aed;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s;
 }
-@keyframes task-bounce {
-  0% { transform: scale(1); }
-  60% { transform: scale(1.13); }
-  100% { transform: scale(1); }
+.restart-btn:hover {
+  background: #5b21b6;
+}
+
+/* CONSOLIDATED Mobile Styles */
+@media (max-width: 600px) {
+  .game-title-top {
+    font-size: 1.5rem;
+    padding: 16px 0 8px 0;
+  }
+
+  .game-score {
+    font-size: 1.2rem;
+  }
+
+  .action-buttons-rows {
+    padding: 8px 0;
+    gap: 6px;
+    margin-bottom: env(safe-area-inset-bottom, 8px);
+  }
+
+  .action-row {
+    gap: 8px;
+  }
+
+  .hex-btn {
+    min-width: 64px;
+    min-height: 44px;
+    font-size: 0.8rem;
+  }
+
+  .game-over {
+    font-size: 1.2rem;
+  }
+
+  .task-block {
+    min-width: 40px;
+    min-height: 32px;
+    font-size: 12px;
+    padding: 4px 8px;
+  }
+}
+
+/* Remove all other conflicting media queries and redundant styles */
+/* ... all old, duplicated, and unused styles will be removed ... */
+
+/* Ensure game over and restart buttons are also responsive */
+.game-over {
+  position: absolute;
+  top: 40%;
+  left: 0;
+  width: 100%;
+  color: #fff;
+  font-size: 1.5rem;
+  font-weight: 700;
+  text-align: center;
+  background: rgba(0,0,0,0.5);
+  padding: 16px;
+  border-radius: 8px;
 }
