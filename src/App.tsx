@@ -263,8 +263,8 @@ function App() {
 
     const task = tasks[taskIndex];
 
-    // --- Cooldown Logic for BRANCH, MERGE, and SCALE ---
-    if (action === 'BRANCH' || action === 'MERGE' || action === 'SCALE UP' || action === 'SCALE DOWN') {
+    // --- Cooldown Logic for BRANCH, MERGE, SCALE, and METRICS ---
+    if (action === 'BRANCH' || action === 'MERGE' || action === 'SCALE UP' || action === 'SCALE DOWN' || action === 'METRICS') {
       // 1. Immediately set the building state for UI feedback
       setTasks(current => current.map(t => t.id === task.id ? { ...t, isBuilding: true } : t));
 
@@ -541,7 +541,7 @@ function App() {
             return (
               <div
                 key={task.id}
-                className={`task-block ${task.type} ${animatingTaskId === task.id ? 'task-animating' : ''} ${isBuilding ? 'task-building' : ''}`}
+                className={`task-block ${task.type} ${task.type === 'traffic' ? currentAction : ''} ${animatingTaskId === task.id ? 'task-animating' : ''} ${isBuilding ? 'task-building' : ''}`}
                 style={style}
               >
                 <div className="task-type">{task.type.toUpperCase()}</div>
@@ -549,6 +549,7 @@ function App() {
                   {isBuilding && currentAction === 'BRANCH' && 'BUILDING...'}
                   {isBuilding && currentAction === 'MERGE' && 'MERGING...'}
                   {isBuilding && (currentAction === 'SCALE UP' || currentAction === 'SCALE DOWN') && 'SCALING...'}
+                  {isBuilding && currentAction === 'METRICS' && 'ANALYZING...'}
                   
                   {!isBuilding && (() => {
                     const actionInfo = iconMap[currentAction];
@@ -589,7 +590,7 @@ function App() {
               return (
                 <button
                   key={action}
-                  className="hex-btn"
+                  className={`hex-btn ${action === 'SCALE UP' ? 'scale-up-btn' : ''}`}
                   disabled={!isRunning}
                   onClick={() => handleAction(action)}
                 >
@@ -608,7 +609,11 @@ function App() {
               return (
                 <button
                   key={action}
-                  className="hex-btn"
+                  className={`hex-btn ${
+                    action === 'SCALE DOWN' ? 'scale-down-btn' : ''
+                  } ${
+                    isProfileButton && isProfileActive ? 'profile-active-btn' : ''
+                  }`}
                   disabled={!isRunning || (isProfileButton && isProfileDisabled)}
                   onClick={() => handleAction(action)}
                 >
