@@ -128,8 +128,8 @@ function App() {
   const addCliLines = (newLines: string[]) => {
     setCliLines(prevLines => {
       const allLines = [...prevLines, ...newLines];
-      // Keep the last 3 lines
-      return allLines.slice(Math.max(allLines.length - 3, 0));
+      // Keep the last 2 lines
+      return allLines.slice(Math.max(allLines.length - 1, 0));
     });
   };
 
