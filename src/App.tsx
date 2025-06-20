@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import './App.css'
 import HelpModal from './HelpModal'; // Import the new modal component
+import CliDisplay from './CliDisplay'; // Import the new CLI component
 import {
   ShareIcon,
   ArrowsRightLeftIcon,
@@ -119,6 +120,18 @@ function App() {
 
   // New state to track if the game has started
   const [gameHasStarted, setGameHasStarted] = useState(false);
+
+  // New state for the fake CLI
+  const [cliLines, setCliLines] = useState<string[]>(['Welcome to upsun.run!']);
+  
+  // Helper to add lines to the CLI output, keeping only the last 3
+  const addCliLines = (newLines: string[]) => {
+    setCliLines(prevLines => {
+      const allLines = [...prevLines, ...newLines];
+      // Keep the last 3 lines
+      return allLines.slice(Math.max(allLines.length - 3, 0));
+    });
+  };
 
   // Effect to pause game when modal opens and manage body class for scrolling
   useEffect(() => {
@@ -283,9 +296,19 @@ function App() {
     if (action === 'BRANCH' || action === 'MERGE' || action === 'SCALE UP' || action === 'SCALE DOWN' || action === 'METRICS') {
       // 1. Immediately set the building state for UI feedback
       setTasks(current => current.map(t => t.id === task.id ? { ...t, isBuilding: true } : t));
+      
+      // 2. Add realistic CLI lines for the action
+      switch(action) {
+        case 'BRANCH': addCliLines([`upsun environment:branch feature-${task.id}`, 'Building environment...']); break;
+        case 'MERGE': addCliLines([`upsun environment:merge feature-${task.id}`, 'Deploying environment...']); break;
+        case 'SCALE UP': addCliLines(['upsun resources:set --size=L', 'Scaling resources...']); break;
+        case 'SCALE DOWN': addCliLines(['upsun resources:set --size=S', 'Scaling resources...']); break;
+        case 'METRICS': addCliLines(['upsun metrics:all --live', 'Analyzing metrics...']); break;
+      }
 
-      // 2. After a delay, perform the actual action
+      // 3. After a delay, perform the actual action and add success message
       setTimeout(() => {
+        addCliLines(['Success.']); // Add success message
         setTasks(current => {
           const idx = current.findIndex(t => t.id === task.id);
           if (idx === -1) return current; // Task might have been removed
@@ -493,6 +516,7 @@ function App() {
           className={`game-area ${isProfileActive ? 'profile-active' : ''}`}
           style={{ position: 'relative' }}
         >
+          <CliDisplay lines={cliLines} />
           {/* SVG for branch lines */}
           <svg
             width={gameAreaWidth}
