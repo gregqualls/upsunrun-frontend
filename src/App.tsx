@@ -19,14 +19,11 @@ interface Task {
   progress: number // how many actions have been completed
 }
 
-// Helper to get a random action
-function getRandomAction() {
-  return ACTIONS[Math.floor(Math.random() * ACTIONS.length)]
-}
 // Helper to get a random horizontal position
 function getRandomX() {
   return Math.floor(Math.random() * (GAME_WIDTH - BLOCK_SIZE))
 }
+
 // Helper to get a random task type and its required actions
 function getRandomTaskTypeAndActions(): { type: 'feature' | 'bug' | 'traffic'; requiredActions: string[] } {
   const types: { type: 'feature' | 'bug' | 'traffic'; requiredActions: string[] }[] = [
