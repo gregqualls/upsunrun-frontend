@@ -191,6 +191,7 @@ body {
 .code-btn:active {
   background: #000;
   transform: scale(0.95);
+  box-shadow: 0 4px 12px #0008, 0 0 20px 5px rgba(16, 185, 129, 0.7); /* Add green glow on click */
 }
 
 .scale-up-btn {

@@ -96,7 +96,7 @@ function getNextAvailableLane(tasks: Task[]): number {
 function App() {
   // Each task: { id, x, y, action, type, requiredActions, progress }
   const [tasks, setTasks] = useState<Task[]>([])
-  const [isRunning, setIsRunning] = useState(true)
+  const [isRunning, setIsRunning] = useState(false); // Game doesn't start automatically
   const [gameOver, setGameOver] = useState(false)
   const [score, setScore] = useState(0)
   const gameRef = useRef<HTMLDivElement>(null)
@@ -116,6 +116,9 @@ function App() {
 
   // New state for Difficulty
   const [difficulty, setDifficulty] = useState<'easy' | 'hard'>('easy');
+
+  // New state to track if the game has started
+  const [gameHasStarted, setGameHasStarted] = useState(false);
 
   // Effect to pause game when modal opens and manage body class for scrolling
   useEffect(() => {
@@ -251,6 +254,12 @@ function App() {
     setScore(0)
     setBranchLines([]) // clear all branch lines
   }
+
+  // New: Handle starting the game for the first time
+  const handleStartGame = () => {
+    setGameHasStarted(true);
+    setIsRunning(true);
+  };
 
   // Handle action button press
   const handleAction = (action: string) => {
@@ -593,6 +602,11 @@ function App() {
             <div className="game-over">
               Game Over<br />
               <button onClick={handleReset} className="restart-btn">Restart</button>
+            </div>
+          )}
+          {!gameHasStarted && !gameOver && (
+            <div className="game-over">
+              <button onClick={handleStartGame} className="restart-btn">Start Game</button>
             </div>
           )}
         </div>
