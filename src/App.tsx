@@ -114,6 +114,9 @@ function App() {
   const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
   const wasRunningBeforeModal = useRef(false);
 
+  // New state for Difficulty
+  const [difficulty, setDifficulty] = useState<'easy' | 'hard'>('easy');
+
   // Effect to pause game when modal opens and manage body class for scrolling
   useEffect(() => {
     if (isHelpModalOpen) {
@@ -213,6 +216,7 @@ function App() {
   // Spawn new tasks at intervals
   useEffect(() => {
     if (!isRunning) return
+    const currentSpawnInterval = difficulty === 'hard' ? SPAWN_INTERVAL / 2 : SPAWN_INTERVAL;
     const interval = setInterval(() => {
       setTasks((prev) => {
         const { type, requiredActions, totalClicks } = getRandomTaskTypeAndActions()
@@ -234,9 +238,9 @@ function App() {
           },
         ]
       })
-    }, SPAWN_INTERVAL)
+    }, currentSpawnInterval)
     return () => clearInterval(interval)
-  }, [isRunning])
+  }, [isRunning, difficulty])
 
   // Reset game
   const handleReset = () => {
@@ -329,11 +333,11 @@ function App() {
               updated[idx] = newTask;
               setTimeout(() => {
                 setTasks((current) => current.filter((t) => t.id !== taskToUpdate.id));
-                setScore((s) => s + 1);
+                setScore((s) => s + (difficulty === 'hard' ? 2 : 1));
               }, MERGE_ANIMATION_DURATION);
             } else {
               updated.splice(idx, 1);
-              setScore((s) => s + 1);
+              setScore((s) => s + (difficulty === 'hard' ? 2 : 1));
             }
           } else {
             updated[idx] = newTask;
@@ -386,7 +390,7 @@ function App() {
       // Handle task completion for non-merge, non-branch actions
       if (isComplete) {
         updated.splice(idx, 1);
-        setScore((s) => s + 1);
+        setScore((s) => s + (difficulty === 'hard' ? 2 : 1));
       } else {
         updated[idx] = newTask;
       }
@@ -447,8 +451,18 @@ function App() {
     <div className="game-bg" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
       <HelpModal isOpen={isHelpModalOpen} onClose={() => setIsHelpModalOpen(false)} />
       {/* Game Title at the very top */}
-      <div className="game-title-top" style={{ position: 'relative' }}>
-        Upsun Run
+      <div className="game-title-top">
+        {/* Difficulty Toggle Button */}
+        <button 
+          className="difficulty-btn"
+          onClick={() => setDifficulty(d => d === 'easy' ? 'hard' : 'easy')}
+          disabled={tasks.length > 0 && !gameOver}
+        >
+          {difficulty === 'easy' ? 'Easy' : 'Hard'} Mode
+        </button>
+        
+        <span>Upsun Run</span>
+
         {/* Container for top-right buttons */}
         <div className="header-buttons">
           <button onClick={() => setIsHelpModalOpen(true)} className="header-btn">
