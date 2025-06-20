@@ -154,30 +154,32 @@ function App() {
 
   // Handle action button press
   const handleAction = (action: string) => {
-    if (!isRunning) return
+    if (!isRunning) return;
+
     setTasks((prev) => {
-      const idx = prev.findIndex((task) => task.requiredActions[task.progress] === action)
-      if (idx === -1) return prev
-      const updated = [...prev]
-      const task = updated[idx]
-      const newProgress = task.progress + 1
-      
-      // Restore the animation trigger
+      const idx = prev.findIndex((task) => task.requiredActions[task.progress] === action);
+      if (idx === -1) return prev;
+
+      const updated = [...prev];
+      const task = updated[idx];
+      const newProgress = task.progress + 1;
+      const isComplete = newProgress >= task.requiredActions.length;
+
       setAnimatingTaskId(task.id);
       setTimeout(() => setAnimatingTaskId(null), 200);
 
-      let newTask = { ...task }
+      // Define the next state of the task
+      let newTask = { ...task, progress: newProgress, action: isComplete ? '' : task.requiredActions[newProgress] };
 
+      // Handle visuals for specific actions
       if (action === 'BRANCH') {
-        const nextLane = getNextAvailableLane(prev)
+        const nextLane = getNextAvailableLane(prev);
         newTask = {
-          ...task,
+          ...newTask,
           lane: nextLane,
           x: getLaneX(nextLane),
-          progress: newProgress,
-          action: task.requiredActions[newProgress],
           branchColor: BRANCH_COLORS[nextLane % BRANCH_COLORS.length],
-        }
+        };
         setBranchLines((lines) => [...lines, {
           id: task.id,
           fromLane: 0,
@@ -187,35 +189,44 @@ function App() {
           mergeY: null,
           currentY: task.y + BLOCK_SIZE / 2,
           opacity: 1,
-        }])
-        updated[idx] = newTask
-        return updated
+        }]);
+      } else if (action === 'MERGE') {
+        const mergeYPos = task.y + BLOCK_SIZE / 2;
+        newTask = {
+          ...newTask,
+          lane: 0,
+          x: getLaneX(0),
+          isMergingBack: true,
+        };
+        setBranchLines((lines) =>
+          lines.map((line) =>
+            line.id === task.id && line.mergeY === null ? { ...line, mergeY: mergeYPos, currentY: mergeYPos } : line
+          )
+        );
       }
 
-      if (action === 'MERGE') {
-        const mergeYPos = task.y + BLOCK_SIZE / 2
-        // 1. Move task visually to production lane
-        newTask = { ...task, lane: 0, x: getLaneX(0), isMergingBack: true, progress: newProgress, action: task.requiredActions[newProgress] }
-        updated[idx] = newTask
-        
-        // 2. Set mergeY to complete the line path
-        setBranchLines(lines => lines.map(line => line.id === task.id && line.mergeY === null ? { ...line, mergeY: mergeYPos, currentY: mergeYPos } : line ))
-
-        // 3. After animation, remove the task
-        setTimeout(() => {
-          setTasks(current => current.filter(t => t.id !== task.id))
-          setScore(s => s + 1)
-        }, MERGE_ANIMATION_DURATION)
-        
-        return updated
+      // Handle task completion for ALL actions
+      if (isComplete) {
+        if (action === 'MERGE') {
+          // Keep the task for the animation, remove it after a delay
+          updated[idx] = newTask;
+          setTimeout(() => {
+            setTasks((current) => current.filter((t) => t.id !== task.id));
+            setScore((s) => s + 1);
+          }, MERGE_ANIMATION_DURATION);
+        } else {
+          // For traffic tasks and others, remove immediately
+          updated.splice(idx, 1);
+          setScore((s) => s + 1);
+        }
+      } else {
+        // Not complete, just update the task in the array
+        updated[idx] = newTask;
       }
-      
-      // Handle other actions
-      newTask = { ...task, progress: newProgress, action: task.requiredActions[newProgress] }
-      updated[idx] = newTask
-      return updated
-    })
-  }
+
+      return updated;
+    });
+  };
 
   // Calculate the number of lanes to render lines for
   const maxLane = Math.max(0, ...tasks.map(t => t.lane))
