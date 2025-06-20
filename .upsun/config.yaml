@@ -1,0 +1,22 @@
+applications:
+  app:
+    type: nodejs:22
+
+    build:
+      flavor: none
+
+    hooks:
+      build: |
+        set -xe
+        npm ci --omit=dev
+        npm run build
+
+    web:
+      commands:
+        start: npm run serve -- --port=$PORT
+
+      locations:
+        /:
+          root: public
+          passthru: true
+          index: [index.html]
