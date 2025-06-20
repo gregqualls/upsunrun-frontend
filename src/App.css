@@ -1,0 +1,88 @@
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
+
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
+}
+.logo:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
+}
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafbaa);
+}
+
+@keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
+  }
+}
+
+.card {
+  padding: 2em;
+}
+
+.read-the-docs {
+  color: #888;
+}
+
+.game-bg {
+  background: #181a20;
+}
+
+.hex-btn {
+  background: #7c3aed;
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.92rem;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  border-radius: 16px;
+  transition: background 0.2s, transform 0.13s cubic-bezier(.4,2,.6,1);
+  box-shadow: 0 2px 8px #0006;
+  padding: 0 12px;
+  min-width: 64px;
+  min-height: 40px;
+  margin: 0 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  white-space: normal;
+  text-align: center;
+  word-break: break-word;
+}
+.hex-btn:active {
+  background: #5b21b6;
+  transform: scale(0.93);
+}
+.hex-btn:disabled {
+  background: #444;
+  color: #bbb;
+  cursor: not-allowed;
+}
+
+/* Animation for task when attacked */
+.task-animating {
+  animation: task-bounce 0.18s cubic-bezier(.4,2,.6,1);
+}
+@keyframes task-bounce {
+  0% { transform: scale(1); }
+  60% { transform: scale(1.13); }
+  100% { transform: scale(1); }
+}
