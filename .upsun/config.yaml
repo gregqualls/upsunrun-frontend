@@ -13,7 +13,7 @@ applications:
 
     web:
       commands:
-        start: npm run serve -- --port=$PORT
+        start: npm run preview -- --port=$PORT
 
       locations:
         /:
