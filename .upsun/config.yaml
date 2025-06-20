@@ -3,12 +3,12 @@ applications:
     type: nodejs:22
 
     build:
-      flavor: nodejs_build
+      flavor: none
 
     hooks:
       build: |
-        set -xe
-        npm ci --omit=dev
+        # set -xe
+        # npm ci --omit=dev
         npm run build
 
     web:
