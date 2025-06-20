@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import './App.css'
+import HelpModal from './HelpModal'; // Import the new modal component
 import {
   ShareIcon,
   ArrowsRightLeftIcon,
@@ -7,6 +8,7 @@ import {
   ArrowTrendingUpIcon,
   ArrowTrendingDownIcon,
   UserCircleIcon,
+  QuestionMarkCircleIcon, // Import the icon for the help button
 } from '@heroicons/react/24/solid'
 
 const BLOCK_SIZE = 50
@@ -104,6 +106,25 @@ function App() {
   const [profileCooldown, setProfileCooldown] = useState(false);
   const [profileTimer, setProfileTimer] = useState(0);
   const profileIntervalRef = useRef<number | null>(null);
+
+  // New state for Help Modal
+  const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
+  const wasRunningBeforeModal = useRef(false);
+
+  // Effect to pause game when modal opens and manage body class for scrolling
+  useEffect(() => {
+    if (isHelpModalOpen) {
+      document.body.classList.add('modal-open');
+      wasRunningBeforeModal.current = isRunning;
+      setIsRunning(false);
+    } else {
+      document.body.classList.remove('modal-open');
+      // Only resume if the game was running before the modal was opened
+      if (wasRunningBeforeModal.current) {
+        setIsRunning(true);
+      }
+    }
+  }, [isHelpModalOpen, isRunning]);
 
   // New, robust useEffect for managing the profile boost timer
   useEffect(() => {
@@ -410,41 +431,33 @@ function App() {
     return path.join(' ');
   }
 
-  const iconMap: { [key: string]: React.ElementType } = {
-    BRANCH: ShareIcon,
-    MERGE: ArrowsRightLeftIcon,
-    'SCALE UP': ArrowTrendingUpIcon,
-    'SCALE DOWN': ArrowTrendingDownIcon,
-    METRICS: ChartBarIcon,
-    PROFILE: UserCircleIcon,
+  const iconMap: { [key: string]: { icon: React.ElementType, color?: string } } = {
+    BRANCH: { icon: ShareIcon },
+    MERGE: { icon: ArrowsRightLeftIcon },
+    'SCALE UP': { icon: ArrowTrendingUpIcon, color: '#10b981' },
+    'SCALE DOWN': { icon: ArrowTrendingDownIcon, color: '#ef4444' },
+    METRICS: { icon: ChartBarIcon },
+    PROFILE: { icon: UserCircleIcon },
   }
 
   return (
     <div className="game-bg" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      <HelpModal isOpen={isHelpModalOpen} onClose={() => setIsHelpModalOpen(false)} />
       {/* Game Title at the very top */}
       <div className="game-title-top" style={{ position: 'relative' }}>
         Upsun Run
-        {/* Pause/Resume button in top right */}
-        <button
-          onClick={() => setIsRunning((r) => !r)}
-          style={{
-            position: 'absolute',
-            right: 16,
-            top: 0,
-            padding: '6px 18px',
-            fontSize: 16,
-            borderRadius: 8,
-            border: 'none',
-            background: isRunning ? '#444' : '#7c3aed',
-            color: '#fff',
-            fontWeight: 700,
-            cursor: 'pointer',
-            boxShadow: '0 2px 8px #0006',
-            zIndex: 10,
-          }}
-        >
-          {isRunning ? 'Pause' : 'Resume'}
-        </button>
+        {/* Container for top-right buttons */}
+        <div className="header-buttons">
+          <button onClick={() => setIsHelpModalOpen(true)} className="header-btn">
+            <QuestionMarkCircleIcon />
+          </button>
+          <button
+            onClick={() => setIsRunning((r) => !r)}
+            className={`header-btn ${!isRunning ? 'resume-btn' : ''}`}
+          >
+            {isRunning ? 'Pause' : 'Resume'}
+          </button>
+        </div>
       </div>
       {/* Centered game area and score */}
       <div className="game-content">
@@ -514,10 +527,11 @@ function App() {
             // New: Dynamic color for traffic tasks
             if (task.type === 'traffic') {
               const currentAction = task.requiredActions[task.progress];
-              if (currentAction.startsWith('SCALE')) {
-                style.backgroundColor = '#f97316'; // Orange for scaling
+              const actionInfo = iconMap[currentAction];
+              if (currentAction.startsWith('SCALE') && actionInfo?.color) {
+                style.backgroundColor = actionInfo.color; // Set background from map
               } else {
-                style.backgroundColor = '#22d3ee'; // Blue for metrics
+                style.backgroundColor = '#2563eb'; // Blue for metrics
               }
             }
 
@@ -531,11 +545,24 @@ function App() {
                 style={style}
               >
                 <div className="task-type">{task.type.toUpperCase()}</div>
-                <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                   {isBuilding && currentAction === 'BRANCH' && 'BUILDING...'}
                   {isBuilding && currentAction === 'MERGE' && 'MERGING...'}
                   {isBuilding && (currentAction === 'SCALE UP' || currentAction === 'SCALE DOWN') && 'SCALING...'}
-                  {!isBuilding && currentAction}
+                  
+                  {!isBuilding && (() => {
+                    const actionInfo = iconMap[currentAction];
+                    if (actionInfo && (currentAction.startsWith('SCALE'))) {
+                      const Icon = actionInfo.icon;
+                      return (
+                        <>
+                          <Icon className="task-action-icon" />
+                          <span>{currentAction}</span>
+                        </>
+                      )
+                    }
+                    return currentAction;
+                  })()}
                 </div>
                 {/* Hide progress text for multi-click CODE tasks and building tasks */}
                 {!isCodeTask && !isBuilding && (
@@ -558,7 +585,7 @@ function App() {
         <div className="hex-buttons-wrapper">
           <div className="action-row">
             {['SCALE UP', 'METRICS', 'BRANCH'].map((action) => {
-              const Icon = iconMap[action];
+              const Icon = iconMap[action].icon;
               return (
                 <button
                   key={action}
@@ -574,7 +601,7 @@ function App() {
           </div>
           <div className="action-row">
             {['SCALE DOWN', 'PROFILE', 'MERGE'].map((action) => {
-              const Icon = iconMap[action];
+              const Icon = iconMap[action].icon;
               const isProfileButton = action === 'PROFILE';
               const isProfileDisabled = isProfileActive || profileCooldown;
               

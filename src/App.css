@@ -3,7 +3,15 @@ html, body, #root {
   height: 100%;
   margin: 0;
   padding: 0;
-  overflow: hidden; /* Prevents all scrolling */
+  /* overflow: hidden; Removed from here */
+}
+
+body:not(.modal-open) {
+  overflow: hidden; /* Apply hidden only when modal is NOT open */
+}
+
+body.modal-open {
+  overflow-y: auto; /* Allow scrolling when modal is open */
 }
 
 body {
@@ -187,6 +195,11 @@ body {
   height: 20px;
 }
 
+.task-action-icon {
+  width: 16px;
+  height: 16px;
+}
+
 .task-block {
   position: absolute;
   padding: 8px 16px;
@@ -276,6 +289,11 @@ body {
     height: 16px;
   }
 
+  .task-action-icon {
+    width: 14px;
+    height: 14px;
+  }
+
   .code-btn {
     width: 88px;
     height: 88px;
@@ -338,4 +356,38 @@ body {
   100% {
     box-shadow: 0 0 0 6px rgba(255, 255, 255, 0);
   }
+}
+
+.header-buttons {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.header-btn {
+  padding: 6px 12px;
+  font-size: 16px;
+  border-radius: 8px;
+  border: none;
+  background: #444;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 2px 8px #0006;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.header-btn svg {
+  width: 24px;
+  height: 24px;
+}
+
+/* Specific color for resume button */
+.resume-btn {
+  background: #7c3aed !important; /* Use important to override base */
 }
