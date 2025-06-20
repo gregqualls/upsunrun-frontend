@@ -95,7 +95,7 @@ html, body, #root {
   position: relative;
   width: 100%;
   background: rgba(30,32,40,0.95);
-  border-radius: 16px;
+  border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 0 24px #222;
 }
@@ -123,7 +123,7 @@ html, body, #root {
   font-weight: 700;
   font-size: 0.92rem;
   border: none;
-  border-radius: 16px;
+  border-radius: 8px;
   box-shadow: 0 2px 8px #0006;
   min-width: 80px;
   min-height: 48px;
@@ -138,7 +138,7 @@ html, body, #root {
   padding: 8px 16px;
   min-width: 60px;
   min-height: 44px;
-  border-radius: 16px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
