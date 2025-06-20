@@ -6,8 +6,14 @@ html, body, #root {
   overflow: hidden; /* Prevents all scrolling */
 }
 
+body {
+  width: 100vw;
+}
+
 #root {
-  display: flex; /* Simplified from previous version */
+  width: 100%; /* Ensure root fills the body */
+  display: flex;
+  justify-content: center; /* Center the app horizontally */
 }
 
 .logo {
@@ -47,9 +53,12 @@ html, body, #root {
 }
 
 .game-bg {
-  height: 100vh;
-  height: 100dvh; /* More robust for mobile */
-  width: 100vw;
+  /* Re-engineered for a consistent phone-like aspect ratio */
+  width: 100%;
+  max-width: 450px; /* A more phone-like max width */
+  aspect-ratio: 9 / 17; /* Enforce a tall aspect ratio */
+  max-height: 95vh; /* Safety to prevent vertical overflow */
+
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -77,7 +86,7 @@ html, body, #root {
   flex-direction: column;
   align-items: center;
   width: 100%;
-  max-width: 420px; /* Constrains width on desktop for phone-like view */
+  /* max-width is no longer needed here */
   overflow: hidden;
   margin: 0;
 }
@@ -98,16 +107,28 @@ html, body, #root {
   border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 0 24px #222;
+  transition: box-shadow 0.3s ease-in-out; /* Smooth transition for the glow */
 }
 
-.action-buttons-rows {
+/* New: Glowing effect for when profile boost is active */
+.game-area.profile-active {
+  box-shadow: 0 0 24px #222, 0 0 12px #10b981, 0 0 20px #10b981;
+}
+
+.action-buttons-container {
   flex-shrink: 0;
   width: 100%;
-  max-width: 420px;
+  /* max-width is no longer needed here */
   padding: 16px 0;
   display: flex;
+  align-items: center; /* This is key to center the code button with the rows */
+  justify-content: center;
+  gap: 12px; /* Gap between hex buttons and code button */
+}
+
+.hex-buttons-wrapper {
+  display: flex;
   flex-direction: column;
-  align-items: center;
   gap: 8px;
 }
 
@@ -125,12 +146,45 @@ html, body, #root {
   border: none;
   border-radius: 8px;
   box-shadow: 0 2px 8px #0006;
-  min-width: 80px;
-  min-height: 48px;
+  width: 120px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 .hex-btn:active {
   background: #5b21b6;
   transform: scale(0.93);
+}
+.hex-btn:disabled {
+  background: #444;
+  cursor: not-allowed;
+}
+
+.code-btn {
+  width: 104px;
+  height: 104px;
+  border-radius: 50%;
+  border: none;
+  background: #10b981; /* A nice green */
+  color: #fff;
+  font-size: 1.5rem;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px #0008;
+  transition: all 0.2s;
+}
+.code-btn:active {
+  background: #0f9b6c;
+  transform: scale(0.95);
+}
+
+.btn-icon {
+  width: 20px;
+  height: 20px;
 }
 
 .task-block {
@@ -197,10 +251,13 @@ html, body, #root {
     font-size: 1.2rem;
   }
 
-  .action-buttons-rows {
+  .action-buttons-container {
     padding: 8px 0;
-    gap: 6px;
     margin-bottom: env(safe-area-inset-bottom, 8px);
+  }
+
+  .hex-buttons-wrapper {
+    gap: 6px;
   }
 
   .action-row {
@@ -208,9 +265,21 @@ html, body, #root {
   }
 
   .hex-btn {
-    min-width: 64px;
-    min-height: 44px;
+    width: 100px;
+    height: 44px;
     font-size: 0.8rem;
+    gap: 4px;
+  }
+
+  .btn-icon {
+    width: 16px;
+    height: 16px;
+  }
+
+  .code-btn {
+    width: 88px;
+    height: 88px;
+    font-size: 1.2rem;
   }
 
   .game-over {

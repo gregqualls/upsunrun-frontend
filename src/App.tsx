@@ -1,5 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import './App.css'
+import {
+  ShareIcon,
+  ArrowsRightLeftIcon,
+  ChartBarIcon,
+  ArrowTrendingUpIcon,
+  ArrowTrendingDownIcon,
+  UserCircleIcon,
+} from '@heroicons/react/24/solid'
 
 const BLOCK_SIZE = 50
 const NORMAL_FALL_SPEED = 0.5; // pixels per frame
@@ -90,6 +98,45 @@ function App() {
   const nextTaskId = useRef(0)
   const [animatingTaskId, setAnimatingTaskId] = useState<number | null>(null)
   const [branchLines, setBranchLines] = useState<BranchLine[]>([])
+  
+  // New state for Profile Boost
+  const [isProfileActive, setIsProfileActive] = useState(false);
+  const [profileCooldown, setProfileCooldown] = useState(false);
+  const [profileTimer, setProfileTimer] = useState(0);
+  const profileIntervalRef = useRef<number | null>(null);
+
+  // New, robust useEffect for managing the profile boost timer
+  useEffect(() => {
+    // Don't run timers if the game is paused
+    if (!isRunning) {
+      if (profileIntervalRef.current) clearInterval(profileIntervalRef.current);
+      return;
+    }
+
+    // Timer is active
+    if (profileTimer > 0) {
+      profileIntervalRef.current = window.setInterval(() => {
+        setProfileTimer((t) => t - 1);
+      }, 1000);
+    } else { // Timer reached 0, transition to the next state
+      if (isProfileActive) {
+        // Boost ended, start cooldown
+        setIsProfileActive(false);
+        setProfileCooldown(true);
+        setProfileTimer(10); // Reset timer for cooldown
+      } else if (profileCooldown) {
+        // Cooldown ended
+        setProfileCooldown(false);
+      }
+    }
+
+    // Cleanup: clear the interval when the component unmounts or dependencies change
+    return () => {
+      if (profileIntervalRef.current) {
+        clearInterval(profileIntervalRef.current);
+      }
+    };
+  }, [isRunning, profileTimer, isProfileActive, profileCooldown]);
 
   // Animate falling tasks and scrolling branch lines
   useEffect(() => {
@@ -181,6 +228,15 @@ function App() {
   const handleAction = (action: string) => {
     if (!isRunning) return;
 
+    // --- Handle Profile Boost Activation (must be checked before finding a task) ---
+    if (action === 'PROFILE') {
+      if (!isProfileActive && !profileCooldown) {
+        setIsProfileActive(true);
+        setProfileTimer(10); // Start the 10-second timer
+      }
+      return; // Profile action is handled, exit.
+    }
+
     const taskIndex = tasks.findIndex((task) => !task.isBuilding && task.requiredActions[task.progress] === action);
     if (taskIndex === -1) return;
 
@@ -261,7 +317,7 @@ function App() {
 
           return updated;
         });
-      }, 1000); // 1-second cooldown
+      }, 1000);
 
       return; // Exit handleAction for these actions
     }
@@ -280,8 +336,10 @@ function App() {
       if (action === 'CODE' && task.totalClicks && task.clicks !== undefined) {
         const now = Date.now();
         const newClickCount = (task.lastClickTime && now - task.lastClickTime > 1000) ? 1 : task.clicks + 1;
+        
+        const requiredClicks = isProfileActive ? Math.ceil(task.totalClicks / 2) : task.totalClicks;
 
-        if (newClickCount >= task.totalClicks) {
+        if (newClickCount >= requiredClicks) {
           const newProgress = task.progress + 1;
           const isComplete = newProgress >= task.requiredActions.length;
           task = { 
@@ -352,6 +410,15 @@ function App() {
     return path.join(' ');
   }
 
+  const iconMap: { [key: string]: React.ElementType } = {
+    BRANCH: ShareIcon,
+    MERGE: ArrowsRightLeftIcon,
+    'SCALE UP': ArrowTrendingUpIcon,
+    'SCALE DOWN': ArrowTrendingDownIcon,
+    METRICS: ChartBarIcon,
+    PROFILE: UserCircleIcon,
+  }
+
   return (
     <div className="game-bg" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
       {/* Game Title at the very top */}
@@ -384,7 +451,7 @@ function App() {
         <div className="game-score">Score: {score}</div>
         <div
           ref={gameRef}
-          className="game-area"
+          className={`game-area ${isProfileActive ? 'profile-active' : ''}`}
           style={{ position: 'relative' }}
         >
           {/* SVG for branch lines */}
@@ -486,31 +553,53 @@ function App() {
         </div>
       </div>
       {/* Action buttons at the bottom, two rows */}
-      <div className="action-buttons-rows">
-        <div className="action-row">
-          {['BRANCH', 'MERGE', 'SCALE UP'].map((action) => (
-            <button
-              key={action}
-              className="hex-btn"
-              disabled={!isRunning}
-              onClick={() => handleAction(action)}
-            >
-              {action}
-            </button>
-          ))}
+      <div className="action-buttons-container">
+        {/* Wrapper for the left-side hex buttons */}
+        <div className="hex-buttons-wrapper">
+          <div className="action-row">
+            {['SCALE UP', 'METRICS', 'BRANCH'].map((action) => {
+              const Icon = iconMap[action];
+              return (
+                <button
+                  key={action}
+                  className="hex-btn"
+                  disabled={!isRunning}
+                  onClick={() => handleAction(action)}
+                >
+                  <Icon className="btn-icon" />
+                  {action}
+                </button>
+              )
+            })}
+          </div>
+          <div className="action-row">
+            {['SCALE DOWN', 'PROFILE', 'MERGE'].map((action) => {
+              const Icon = iconMap[action];
+              const isProfileButton = action === 'PROFILE';
+              const isProfileDisabled = isProfileActive || profileCooldown;
+              
+              return (
+                <button
+                  key={action}
+                  className="hex-btn"
+                  disabled={!isRunning || (isProfileButton && isProfileDisabled)}
+                  onClick={() => handleAction(action)}
+                >
+                  <Icon className="btn-icon" />
+                  {isProfileButton && (isProfileActive || profileCooldown) ? `${profileTimer}s` : action}
+                </button>
+              )
+            })}
+          </div>
         </div>
-        <div className="action-row">
-          {['CODE', 'METRICS', 'SCALE DOWN'].map((action) => (
-            <button
-              key={action}
-              className="hex-btn"
-              disabled={!isRunning}
-              onClick={() => handleAction(action)}
-            >
-              {action}
-            </button>
-          ))}
-        </div>
+        {/* The new, large CODE button */}
+        <button
+          className="code-btn"
+          disabled={!isRunning}
+          onClick={() => handleAction('CODE')}
+        >
+          CODE
+        </button>
       </div>
     </div>
   )
