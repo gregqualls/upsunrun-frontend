@@ -3,7 +3,7 @@ applications:
     type: nodejs:22
 
     build:
-      flavor: none
+      flavor: nodejs_build
 
     hooks:
       build: |
