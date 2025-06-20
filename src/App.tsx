@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import './App.css'
 
-const ACTIONS = ['CODE', 'PROFILE', 'METRICS', 'SCALE', 'BRANCH', 'MERGE']
 const BLOCK_SIZE = 50
 const FALL_SPEED = 0.5 // pixels per frame
 const SPAWN_INTERVAL = 4800 // ms
