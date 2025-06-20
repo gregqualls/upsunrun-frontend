@@ -8,18 +8,20 @@ const SPAWN_INTERVAL = 4800 // ms
 // Define Task type
 interface Task {
   id: number
-  x: number
+  x: number // will be calculated from lane
   y: number
   action: string
   type: 'feature' | 'bug' | 'traffic'
   requiredActions: string[]
   progress: number // how many actions have been completed
+  lane: number // 0 = production, 1+ = branches
+  branchColor: string // color for the branch line
+  fadingBranch?: boolean // for merge animation
 }
 
-// Helper to get a random horizontal position
-function getRandomX(gameWidth: number) {
-  return Math.floor(Math.random() * (gameWidth - BLOCK_SIZE))
-}
+const BRANCH_COLORS = ['#7c3aed', '#22d3ee', '#facc15', '#ef4444', '#10b981', '#f472b6']
+const LANE_WIDTH = 60 // px, horizontal distance between lanes
+const LANE_START_X = 32 // px, left margin for production lane
 
 // Helper to get a random task type and its required actions
 function getRandomTaskTypeAndActions(): { type: 'feature' | 'bug' | 'traffic'; requiredActions: string[] } {
@@ -30,6 +32,18 @@ function getRandomTaskTypeAndActions(): { type: 'feature' | 'bug' | 'traffic'; r
   ]
   const idx = Math.floor(Math.random() * types.length)
   return types[idx]
+}
+
+function getLaneX(lane: number) {
+  return LANE_START_X + lane * LANE_WIDTH
+}
+
+function getNextAvailableLane(tasks: Task[]): number {
+  // Find the rightmost lane currently in use, or 0 if none
+  const lanes = tasks.map(t => t.lane)
+  let lane = 1
+  while (lanes.includes(lane)) lane++
+  return lane
 }
 
 function App() {
@@ -69,17 +83,19 @@ function App() {
     const interval = setInterval(() => {
       setTasks((prev) => {
         const { type, requiredActions } = getRandomTaskTypeAndActions()
-        const gameWidth = gameRef.current?.clientWidth || 400
+        // Always spawn in production lane (0)
         return [
           ...prev,
           {
             id: nextTaskId.current++,
-            x: getRandomX(gameWidth),
+            x: getLaneX(0),
             y: 0,
-            action: requiredActions[0], // show the first required action as the current
+            action: requiredActions[0],
             type,
             requiredActions,
             progress: 0,
+            lane: 0,
+            branchColor: BRANCH_COLORS[0],
           },
         ]
       })
@@ -100,6 +116,7 @@ function App() {
   const handleAction = (action: string) => {
     if (!isRunning) return
     setTasks((prev) => {
+      // Find the first task that matches the current action
       const idx = prev.findIndex(
         (task) => task.requiredActions[task.progress] === action
       )
@@ -109,15 +126,46 @@ function App() {
       const newProgress = task.progress + 1
       setAnimatingTaskId(task.id)
       setTimeout(() => setAnimatingTaskId(null), 200)
+      let newTask = { ...task }
+      if (action === 'BRANCH') {
+        // Move to next available lane and assign a branch color
+        const nextLane = getNextAvailableLane(prev)
+        newTask = {
+          ...task,
+          lane: nextLane,
+          x: getLaneX(nextLane),
+          branchColor: BRANCH_COLORS[nextLane % BRANCH_COLORS.length],
+          progress: newProgress,
+          action: task.requiredActions[newProgress],
+        }
+      } else if (action === 'MERGE') {
+        // Move back to production lane, mark branch for fading
+        newTask = {
+          ...task,
+          lane: 0,
+          x: getLaneX(0),
+          fadingBranch: true,
+          progress: newProgress,
+          action: task.requiredActions[newProgress],
+        }
+      } else {
+        newTask = { ...task, progress: newProgress, action: task.requiredActions[newProgress] }
+      }
+      // Remove task if completed
       if (newProgress >= task.requiredActions.length) {
         updated.splice(idx, 1)
         setScore((s) => s + 1)
       } else {
-        updated[idx] = { ...task, progress: newProgress, action: task.requiredActions[newProgress] }
+        updated[idx] = newTask
       }
       return updated
     })
   }
+
+  // Calculate the number of lanes to render lines for
+  const maxLane = Math.max(0, ...tasks.map(t => t.lane))
+  // Get the height of the game area for line rendering
+  const gameAreaHeight = gameRef.current?.clientHeight || 500
 
   return (
     <div className="game-bg" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -130,14 +178,37 @@ function App() {
           ref={gameRef}
           className="game-area"
         >
+          {/* Render branch/production lines for each lane */}
+          {Array.from({ length: maxLane + 1 }).map((_, laneIdx) => {
+            // Find a task in this lane to get its color, default to production color
+            const taskInLane = tasks.find(t => t.lane === laneIdx)
+            const color = taskInLane ? taskInLane.branchColor : BRANCH_COLORS[laneIdx % BRANCH_COLORS.length]
+            return (
+              <div
+                key={laneIdx}
+                style={{
+                  position: 'absolute',
+                  left: getLaneX(laneIdx) + BLOCK_SIZE / 2 - 4, // center line under block
+                  top: 0,
+                  width: 8,
+                  height: gameAreaHeight,
+                  background: color,
+                  borderRadius: 4,
+                  opacity: 0.5,
+                  zIndex: 0,
+                }}
+              />
+            )
+          })}
           {/* Render all falling tasks */}
           {tasks.map((task) => (
             <div
               key={task.id}
               className={`task-block ${task.type} ${animatingTaskId === task.id ? 'task-animating' : ''}`}
               style={{
-                left: task.x,
+                left: getLaneX(task.lane),
                 top: task.y,
+                zIndex: 1,
               }}
             >
               <div className="task-type">{task.type.toUpperCase()}</div>
