@@ -62,7 +62,10 @@ function getRandomTaskTypeAndActions(): Omit<Task, 'id' | 'x' | 'y' | 'action' |
         requiredActions: string[];
         totalClicks?: number;
     }> = [
+        // Add more instances of feature and bug to make them more common
         { type: 'feature', requiredActions: ['BRANCH', 'CODE', 'MERGE'], totalClicks: Math.floor(Math.random() * 9) + 2 },
+        { type: 'feature', requiredActions: ['BRANCH', 'CODE', 'MERGE'], totalClicks: Math.floor(Math.random() * 9) + 2 },
+        { type: 'bug', requiredActions: ['BRANCH', 'CODE', 'MERGE'], totalClicks: Math.floor(Math.random() * 9) + 2 },
         { type: 'bug', requiredActions: ['BRANCH', 'CODE', 'MERGE'], totalClicks: Math.floor(Math.random() * 9) + 2 },
         { type: 'traffic', requiredActions: ['METRICS', Math.random() < 0.5 ? 'SCALE UP' : 'SCALE DOWN'] },
     ];
