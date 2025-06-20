@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import './App.css'
 
 const BLOCK_SIZE = 50
-const FALL_SPEED = 0.5 // pixels per frame
+const NORMAL_FALL_SPEED = 0.5; // pixels per frame
+const BUG_FALL_SPEED = 0.75;  // bugs fall 50% faster
 const SPAWN_INTERVAL = 4800 // ms
 const MERGE_ANIMATION_DURATION = 350; // ms
 
@@ -19,6 +20,10 @@ interface Task {
   branchColor: string // color for the branch line
   fadingBranch?: boolean // for merge animation
   isMergingBack?: boolean // new: for merge animation
+  totalClicks?: number; // Total clicks needed for CODE tasks
+  clicks?: number;      // Current clicks for CODE tasks
+  lastClickTime?: number; // For rapid click check
+  isBuilding?: boolean; // For the build/merge cooldown
 }
 
 // BranchLine type for true git-branch effect
@@ -32,6 +37,7 @@ interface BranchLine {
   mergeY: number | null
   opacity?: number
   fading?: boolean
+  speed: number // new: each branch has its own scroll speed
 }
 
 const BRANCH_COLORS = ['#7c3aed', '#22d3ee', '#facc15', '#ef4444', '#10b981', '#f472b6']
@@ -39,14 +45,27 @@ const LANE_WIDTH = 60 // px, horizontal distance between lanes
 const LANE_START_X = 32 // px, left margin for production lane
 
 // Helper to get a random task type and its required actions
-function getRandomTaskTypeAndActions(): { type: 'feature' | 'bug' | 'traffic'; requiredActions: string[] } {
-  const types: { type: 'feature' | 'bug' | 'traffic'; requiredActions: string[] }[] = [
-    { type: 'feature', requiredActions: ['BRANCH', 'CODE', 'MERGE'] },
-    { type: 'bug', requiredActions: ['BRANCH', 'CODE', 'CODE', 'MERGE'] },
-    { type: 'traffic', requiredActions: ['METRICS', 'SCALE'] },
-  ]
-  const idx = Math.floor(Math.random() * types.length)
-  return types[idx]
+function getRandomTaskTypeAndActions(): Omit<Task, 'id' | 'x' | 'y' | 'action' | 'progress' | 'lane' | 'branchColor'> {
+    // Define the shape of our task templates
+    const types: Array<{
+        type: 'feature' | 'bug' | 'traffic';
+        requiredActions: string[];
+        totalClicks?: number;
+    }> = [
+        { type: 'feature', requiredActions: ['BRANCH', 'CODE', 'MERGE'], totalClicks: Math.floor(Math.random() * 9) + 2 },
+        { type: 'bug', requiredActions: ['BRANCH', 'CODE', 'MERGE'], totalClicks: Math.floor(Math.random() * 9) + 2 },
+        { type: 'traffic', requiredActions: ['METRICS', Math.random() < 0.5 ? 'SCALE UP' : 'SCALE DOWN'] },
+    ];
+    const idx = Math.floor(Math.random() * types.length);
+    return types[idx];
+}
+
+// Helper to convert hex to rgba for the color fade effect
+function hexToRgba(hex: string, alpha: number) {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
 function getLaneX(lane: number) {
@@ -76,21 +95,25 @@ function App() {
   useEffect(() => {
     if (!isRunning) return
     const interval = setInterval(() => {
-      // 1. "Paper moves up": All existing branch lines scroll up
+      // 1. "Paper moves up": All existing branch lines scroll up based on their individual speed
       setBranchLines((lines) =>
         lines.map((line) => ({
           ...line,
-          branchY: line.branchY - FALL_SPEED,
-          currentY: line.currentY - FALL_SPEED,
-          mergeY: line.mergeY !== null ? line.mergeY - FALL_SPEED : null,
+          branchY: line.branchY - line.speed,
+          currentY: line.currentY - line.speed,
+          mergeY: line.mergeY !== null ? line.mergeY - line.speed : null,
           opacity: line.opacity !== undefined ? Math.max(0, line.opacity - 0.001) : 1,
         })).filter(line => (line.mergeY || line.currentY) > -50 && line.opacity > 0)
       )
 
-      // 2. "Pen draws down": Tasks fall
+      // 2. "Pen draws down": Tasks fall at different speeds
       setTasks((prevTasks) => {
         const gameHeight = gameRef.current?.clientHeight || 500
-        const movedTasks = prevTasks.map((task) => ({ ...task, y: task.y + FALL_SPEED }))
+        const movedTasks = prevTasks.map((task) => {
+          // Task now falls even while building
+          const speed = task.type === 'bug' ? BUG_FALL_SPEED : NORMAL_FALL_SPEED;
+          return { ...task, y: task.y + speed };
+        });
 
         // 3. Re-peg the end of active lines to their tasks
         setBranchLines((currentLines) =>
@@ -121,7 +144,7 @@ function App() {
     if (!isRunning) return
     const interval = setInterval(() => {
       setTasks((prev) => {
-        const { type, requiredActions } = getRandomTaskTypeAndActions()
+        const { type, requiredActions, totalClicks } = getRandomTaskTypeAndActions()
         // Always spawn in production lane (0)
         return [
           ...prev,
@@ -135,6 +158,8 @@ function App() {
             progress: 0,
             lane: 0,
             branchColor: BRANCH_COLORS[0],
+            totalClicks: totalClicks,
+            clicks: 0, // Initialize clicks
           },
         ]
       })
@@ -156,71 +181,131 @@ function App() {
   const handleAction = (action: string) => {
     if (!isRunning) return;
 
+    const taskIndex = tasks.findIndex((task) => !task.isBuilding && task.requiredActions[task.progress] === action);
+    if (taskIndex === -1) return;
+
+    const task = tasks[taskIndex];
+
+    // --- Cooldown Logic for BRANCH, MERGE, and SCALE ---
+    if (action === 'BRANCH' || action === 'MERGE' || action === 'SCALE UP' || action === 'SCALE DOWN') {
+      // 1. Immediately set the building state for UI feedback
+      setTasks(current => current.map(t => t.id === task.id ? { ...t, isBuilding: true } : t));
+
+      // 2. After a delay, perform the actual action
+      setTimeout(() => {
+        setTasks(current => {
+          const idx = current.findIndex(t => t.id === task.id);
+          if (idx === -1) return current; // Task might have been removed
+
+          const updated = [...current];
+          const taskToUpdate = updated[idx];
+          const newProgress = taskToUpdate.progress + 1;
+          const isComplete = newProgress >= taskToUpdate.requiredActions.length;
+          
+          let newTask = { 
+            ...taskToUpdate,
+            progress: newProgress, 
+            action: isComplete ? '' : taskToUpdate.requiredActions[newProgress],
+            isBuilding: false // Cooldown finished
+          };
+
+          if (action === 'BRANCH') {
+            const nextLane = getNextAvailableLane(updated);
+            newTask = {
+              ...newTask,
+              lane: nextLane,
+              x: getLaneX(nextLane),
+              branchColor: BRANCH_COLORS[nextLane % BRANCH_COLORS.length],
+            };
+            setBranchLines((lines) => [...lines, {
+              id: taskToUpdate.id,
+              fromLane: 0,
+              toLane: nextLane,
+              color: newTask.branchColor,
+              branchY: taskToUpdate.y + BLOCK_SIZE / 2,
+              mergeY: null,
+              currentY: taskToUpdate.y + BLOCK_SIZE / 2,
+              opacity: 1,
+              speed: taskToUpdate.type === 'bug' ? BUG_FALL_SPEED : NORMAL_FALL_SPEED,
+            }]);
+          } else if (action === 'MERGE') {
+            const mergeYPos = taskToUpdate.y + BLOCK_SIZE / 2;
+            newTask = {
+              ...newTask,
+              lane: 0,
+              x: getLaneX(0),
+              isMergingBack: true,
+            };
+            setBranchLines((lines) =>
+              lines.map((line) =>
+                line.id === taskToUpdate.id && line.mergeY === null ? { ...line, mergeY: mergeYPos, currentY: mergeYPos } : line
+              )
+            );
+          }
+
+          // Handle task completion (same as before, just inside the timeout)
+          if (isComplete) {
+            if (action === 'MERGE') {
+              updated[idx] = newTask;
+              setTimeout(() => {
+                setTasks((current) => current.filter((t) => t.id !== taskToUpdate.id));
+                setScore((s) => s + 1);
+              }, MERGE_ANIMATION_DURATION);
+            } else {
+              updated.splice(idx, 1);
+              setScore((s) => s + 1);
+            }
+          } else {
+            updated[idx] = newTask;
+          }
+
+          return updated;
+        });
+      }, 1000); // 1-second cooldown
+
+      return; // Exit handleAction for these actions
+    }
+
+    // --- Logic for non-cooldown actions (e.g., CODE) ---
     setTasks((prev) => {
       const idx = prev.findIndex((task) => task.requiredActions[task.progress] === action);
-      if (idx === -1) return prev;
+      if (idx === -1) return prev; // Should not happen due to outer check, but good practice
 
       const updated = [...prev];
-      const task = updated[idx];
-      const newProgress = task.progress + 1;
-      const isComplete = newProgress >= task.requiredActions.length;
-
+      let task = { ...updated[idx] };
+      
       setAnimatingTaskId(task.id);
       setTimeout(() => setAnimatingTaskId(null), 200);
 
-      // Define the next state of the task
+      if (action === 'CODE' && task.totalClicks && task.clicks !== undefined) {
+        const now = Date.now();
+        const newClickCount = (task.lastClickTime && now - task.lastClickTime > 1000) ? 1 : task.clicks + 1;
+
+        if (newClickCount >= task.totalClicks) {
+          const newProgress = task.progress + 1;
+          const isComplete = newProgress >= task.requiredActions.length;
+          task = { 
+            ...task, 
+            progress: newProgress,
+            clicks: newClickCount,
+            action: isComplete ? '' : task.requiredActions[newProgress] 
+          };
+        } else {
+          task = { ...task, clicks: newClickCount, lastClickTime: now };
+        }
+        updated[idx] = task;
+        return updated;
+      }
+      
+      const newProgress = task.progress + 1;
+      const isComplete = newProgress >= task.requiredActions.length;
       let newTask = { ...task, progress: newProgress, action: isComplete ? '' : task.requiredActions[newProgress] };
 
-      // Handle visuals for specific actions
-      if (action === 'BRANCH') {
-        const nextLane = getNextAvailableLane(prev);
-        newTask = {
-          ...newTask,
-          lane: nextLane,
-          x: getLaneX(nextLane),
-          branchColor: BRANCH_COLORS[nextLane % BRANCH_COLORS.length],
-        };
-        setBranchLines((lines) => [...lines, {
-          id: task.id,
-          fromLane: 0,
-          toLane: nextLane,
-          color: newTask.branchColor,
-          branchY: task.y + BLOCK_SIZE / 2,
-          mergeY: null,
-          currentY: task.y + BLOCK_SIZE / 2,
-          opacity: 1,
-        }]);
-      } else if (action === 'MERGE') {
-        const mergeYPos = task.y + BLOCK_SIZE / 2;
-        newTask = {
-          ...newTask,
-          lane: 0,
-          x: getLaneX(0),
-          isMergingBack: true,
-        };
-        setBranchLines((lines) =>
-          lines.map((line) =>
-            line.id === task.id && line.mergeY === null ? { ...line, mergeY: mergeYPos, currentY: mergeYPos } : line
-          )
-        );
-      }
-
-      // Handle task completion for ALL actions
+      // Handle task completion for non-merge, non-branch actions
       if (isComplete) {
-        if (action === 'MERGE') {
-          // Keep the task for the animation, remove it after a delay
-          updated[idx] = newTask;
-          setTimeout(() => {
-            setTasks((current) => current.filter((t) => t.id !== task.id));
-            setScore((s) => s + 1);
-          }, MERGE_ANIMATION_DURATION);
-        } else {
-          // For traffic tasks and others, remove immediately
-          updated.splice(idx, 1);
-          setScore((s) => s + 1);
-        }
+        updated.splice(idx, 1);
+        setScore((s) => s + 1);
       } else {
-        // Not complete, just update the task in the array
         updated[idx] = newTask;
       }
 
@@ -344,21 +429,54 @@ function App() {
             )
           })}
           {/* Render all falling tasks */}
-          {tasks.map((task) => (
-            <div
-              key={task.id}
-              className={`task-block ${task.type} ${animatingTaskId === task.id ? 'task-animating' : ''}`}
-              style={{
-                left: getLaneX(task.lane),
-                top: task.y,
-                zIndex: 1,
-              }}
-            >
-              <div className="task-type">{task.type.toUpperCase()}</div>
-              <div>{task.requiredActions[task.progress]}</div>
-              <div className="task-progress">{task.progress+1}/{task.requiredActions.length}</div>
-            </div>
-          ))}
+          {tasks.map((task) => {
+            let style: React.CSSProperties = {
+              left: getLaneX(task.lane),
+              top: task.y,
+              zIndex: 1,
+            };
+
+            // New logic for CODE task background color
+            const isCodeTask = task.requiredActions[task.progress] === 'CODE' && task.totalClicks && task.clicks !== undefined;
+            if (isCodeTask) {
+              const color = task.type === 'feature' ? '#10b981' : '#ef4444'; // green for feature, red for bug
+              const alpha = 0.2 + (task.clicks! / task.totalClicks!) * 0.8; // Fade from 0.2 to 1.0
+              style.backgroundColor = hexToRgba(color, alpha);
+            }
+
+            // New: Dynamic color for traffic tasks
+            if (task.type === 'traffic') {
+              const currentAction = task.requiredActions[task.progress];
+              if (currentAction.startsWith('SCALE')) {
+                style.backgroundColor = '#f97316'; // Orange for scaling
+              } else {
+                style.backgroundColor = '#22d3ee'; // Blue for metrics
+              }
+            }
+
+            const isBuilding = task.isBuilding;
+            const currentAction = task.requiredActions[task.progress];
+
+            return (
+              <div
+                key={task.id}
+                className={`task-block ${task.type} ${animatingTaskId === task.id ? 'task-animating' : ''} ${isBuilding ? 'task-building' : ''}`}
+                style={style}
+              >
+                <div className="task-type">{task.type.toUpperCase()}</div>
+                <div>
+                  {isBuilding && currentAction === 'BRANCH' && 'BUILDING...'}
+                  {isBuilding && currentAction === 'MERGE' && 'MERGING...'}
+                  {isBuilding && (currentAction === 'SCALE UP' || currentAction === 'SCALE DOWN') && 'SCALING...'}
+                  {!isBuilding && currentAction}
+                </div>
+                {/* Hide progress text for multi-click CODE tasks and building tasks */}
+                {!isCodeTask && !isBuilding && (
+                  <div className="task-progress">{task.progress+1}/{task.requiredActions.length}</div>
+                )}
+              </div>
+            )
+          })}
           {gameOver && (
             <div className="game-over">
               Game Over<br />
@@ -370,7 +488,7 @@ function App() {
       {/* Action buttons at the bottom, two rows */}
       <div className="action-buttons-rows">
         <div className="action-row">
-          {['BRANCH', 'MERGE', 'SCALE'].map((action) => (
+          {['BRANCH', 'MERGE', 'SCALE UP'].map((action) => (
             <button
               key={action}
               className="hex-btn"
@@ -382,7 +500,7 @@ function App() {
           ))}
         </div>
         <div className="action-row">
-          {['CODE', 'METRICS', 'PROFILE'].map((action) => (
+          {['CODE', 'METRICS', 'SCALE DOWN'].map((action) => (
             <button
               key={action}
               className="hex-btn"

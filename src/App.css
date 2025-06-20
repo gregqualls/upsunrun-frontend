@@ -242,3 +242,31 @@ html, body, #root {
   padding: 16px;
   border-radius: 8px;
 }
+
+.task-animating {
+  animation: bounce 0.2s ease-in-out;
+}
+
+/* New: Add a pulsing effect for tasks in the "building" state */
+.task-building {
+  animation: pulse-border 1s infinite;
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+/* New: Keyframes for the pulsing border animation */
+@keyframes pulse-border {
+  0% {
+    box-shadow: 0 0 0 0px rgba(255, 255, 255, 0.5);
+  }
+  100% {
+    box-shadow: 0 0 0 6px rgba(255, 255, 255, 0);
+  }
+}
