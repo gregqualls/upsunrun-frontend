@@ -2,8 +2,6 @@ import { useEffect, useRef, useState } from 'react'
 import './App.css'
 
 const ACTIONS = ['CODE', 'PROFILE', 'METRICS', 'SCALE', 'BRANCH', 'MERGE']
-const GAME_HEIGHT = 500
-const GAME_WIDTH = 400
 const BLOCK_SIZE = 50
 const FALL_SPEED = 0.5 // pixels per frame
 const SPAWN_INTERVAL = 4800 // ms
@@ -20,8 +18,8 @@ interface Task {
 }
 
 // Helper to get a random horizontal position
-function getRandomX() {
-  return Math.floor(Math.random() * (GAME_WIDTH - BLOCK_SIZE))
+function getRandomX(gameWidth: number) {
+  return Math.floor(Math.random() * (gameWidth - BLOCK_SIZE))
 }
 
 // Helper to get a random task type and its required actions
@@ -50,14 +48,15 @@ function App() {
     if (!isRunning) return
     const interval = setInterval(() => {
       setTasks((prev) => {
+        const gameHeight = gameRef.current?.clientHeight || 500
         // Move all tasks down
         const moved = prev.map((task) => ({ ...task, y: task.y + FALL_SPEED }))
         // Check if any task hit the bottom
-        const hitBottom = moved.some((task) => task.y + BLOCK_SIZE >= GAME_HEIGHT)
+        const hitBottom = moved.some((task) => task.y + BLOCK_SIZE >= gameHeight)
         if (hitBottom) {
           setIsRunning(false)
           setGameOver(true)
-          return moved.map((task) => ({ ...task, y: Math.min(task.y, GAME_HEIGHT - BLOCK_SIZE) }))
+          return moved.map((task) => ({ ...task, y: Math.min(task.y, gameHeight - BLOCK_SIZE) }))
         }
         return moved
       })
@@ -71,11 +70,12 @@ function App() {
     const interval = setInterval(() => {
       setTasks((prev) => {
         const { type, requiredActions } = getRandomTaskTypeAndActions()
+        const gameWidth = gameRef.current?.clientWidth || 400
         return [
           ...prev,
           {
             id: nextTaskId.current++,
-            x: getRandomX(),
+            x: getRandomX(gameWidth),
             y: 0,
             action: requiredActions[0], // show the first required action as the current
             type,
