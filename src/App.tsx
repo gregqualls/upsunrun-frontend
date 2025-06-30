@@ -297,8 +297,8 @@ function App() {
       switch(action) {
         case 'BRANCH': addCliLines([`upsun environment:branch feature-${task.id}`, 'Building environment...']); break;
         case 'MERGE': addCliLines([`upsun environment:merge feature-${task.id}`, 'Deploying environment...']); break;
-        case 'SCALE UP': addCliLines(['upsun resources:set --size=L', 'Scaling resources...']); break;
-        case 'SCALE DOWN': addCliLines(['upsun resources:set --size=S', 'Scaling resources...']); break;
+        case 'SCALE UP': addCliLines(['upsun resources:set --count frontend:6', 'Scaling resources...']); break;
+        case 'SCALE DOWN': addCliLines(['upsun resources:set --count frontend:3', 'Scaling resources...']); break;
         case 'METRICS': addCliLines(['upsun metrics:all --live', 'Analyzing metrics...']); break;
       }
 
