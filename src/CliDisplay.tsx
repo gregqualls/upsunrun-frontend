@@ -2,17 +2,21 @@ import './CliDisplay.css';
 
 interface CliDisplayProps {
   lines: string[];
+  isBackground?: boolean;
 }
 
-const CliDisplay = ({ lines }: CliDisplayProps) => {
+const CliDisplay = ({ lines, isBackground }: CliDisplayProps) => {
   return (
-    <div className="cli-display">
+    <div
+      className={`cli-display${isBackground ? ' cli-background' : ''}`}
+      style={isBackground ? { display: 'flex', flexDirection: 'column-reverse', justifyContent: 'flex-start', height: '100%' } : {}}
+    >
       {lines.map((line, index) => (
         <p key={index} className="cli-line">
           <span className="cli-prompt">$</span> {line}
         </p>
       ))}
-      <div className="cli-cursor"></div>
+      {!isBackground && <div className="cli-cursor"></div>}
     </div>
   );
 };

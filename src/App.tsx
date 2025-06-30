@@ -124,13 +124,9 @@ function App() {
   // New state for the fake CLI
   const [cliLines, setCliLines] = useState<string[]>(['Welcome to upsun.run!']);
   
-  // Helper to add lines to the CLI output, keeping only the last 3
+  // Helper to add lines to the CLI output, keeping the full history
   const addCliLines = (newLines: string[]) => {
-    setCliLines(prevLines => {
-      const allLines = [...prevLines, ...newLines];
-      // Keep the last 2 lines
-      return allLines.slice(Math.max(allLines.length - 1, 0));
-    });
+    setCliLines(prevLines => [...prevLines, ...newLines]);
   };
 
   // Effect to pause game when modal opens and manage body class for scrolling
@@ -479,6 +475,9 @@ function App() {
     PROFILE: { icon: UserCircleIcon },
   }
 
+  // Show the full CLI history in the background, building up from the bottom
+  const bgLines = cliLines;
+
   return (
     <div className="game-bg" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
       <HelpModal isOpen={isHelpModalOpen} onClose={() => setIsHelpModalOpen(false)} />
@@ -516,7 +515,7 @@ function App() {
           className={`game-area ${isProfileActive ? 'profile-active' : ''}`}
           style={{ position: 'relative' }}
         >
-          <CliDisplay lines={cliLines} />
+          <CliDisplay lines={bgLines} isBackground />
           {/* SVG for branch lines */}
           <svg
             width={gameAreaWidth}
