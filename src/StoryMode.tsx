@@ -42,7 +42,7 @@ const initialTutorialState: TutorialState = {
   profilerCycleComplete: false,
 };
 
-export function getDialogForStage(stage: TutorialStage, progress: TutorialProgress): React.ReactNode | null {
+export function getDialogForStage(stage: TutorialStage): React.ReactNode | null {
   switch (stage) {
     case 2:
       return (
