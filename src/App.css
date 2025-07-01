@@ -136,15 +136,16 @@ body {
 }
 
 .action-buttons-container {
-  width: 100%;
-  padding: 16px 0 24px 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
+  gap: 24px;
   background: none;
   box-sizing: border-box;
   margin-bottom: 0;
+  z-index: 10;
+  flex-wrap: wrap;
+  max-width: 100%;
 }
 
 @media (max-width: 480px), (max-height: 950px) {
@@ -184,12 +185,12 @@ body {
   background: #7c3aed;
   color: #fff;
   font-weight: 700;
-  font-size: 0.92rem;
+  font-size: 0.65rem;
   border: none;
   border-radius: 8px;
   box-shadow: 0 2px 8px #0006;
-  width: 120px;
-  height: 48px;
+  width: 100px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -205,13 +206,13 @@ body {
 }
 
 .code-btn {
-  width: 104px;
-  height: 104px;
+  width: 80px;
+  height: 80px;
   border-radius: 50%;
   border: 2px solid #fff; /* Thin white border */
   background: #1a1a1a; /* Neutral black */
   color: #fff;
-  font-size: 1.5rem;
+  font-size: 0.85rem;
   font-weight: 900;
   display: flex;
   align-items: center;
@@ -251,8 +252,8 @@ body {
 }
 
 .btn-icon {
-  width: 20px;
-  height: 20px;
+  width: 16px;
+  height: 16px;
 }
 
 .task-action-icon {
@@ -354,15 +355,15 @@ body {
   }
 
   .hex-btn {
-    width: 100px;
-    height: 44px;
-    font-size: 0.8rem;
+    width: 80px;
+    height: 32px;
+    font-size: 0.6rem;
     gap: 4px;
   }
 
   .btn-icon {
-    width: 16px;
-    height: 16px;
+    width: 12px;
+    height: 12px;
   }
 
   .task-action-icon {
@@ -371,9 +372,9 @@ body {
   }
 
   .code-btn {
-    width: 88px;
-    height: 88px;
-    font-size: 1.2rem;
+    width: 60px;
+    height: 60px;
+    font-size: 0.75rem;
   }
 
   .game-over {
@@ -632,5 +633,33 @@ body {
     height: 36px;
     font-size: 13px;
     padding: 0 10px;
+  }
+}
+
+.flex-action-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+}
+.action-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.code-btn-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+@media (max-width: 600px) {
+  .flex-action-row {
+    flex-direction: column;
+    gap: 12px;
+  }
+  .action-grid {
+    width: 100%;
+    min-width: 0;
   }
 }

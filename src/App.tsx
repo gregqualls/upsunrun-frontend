@@ -768,7 +768,7 @@ function App() {
                 <button
                   className="restart-btn"
                   style={{ marginLeft: 8, background: '#444', color: '#fff', border: '1px solid #888' }}
-                  onClick={() => {
+                  onClick={(e) => {
                     setTutorial((s: TutorialState) => ({ ...s, mode: false, dialog: null, paused: false }));
                     setIsRunning(true);
                   }}
@@ -943,50 +943,50 @@ function App() {
                 </div>
               )
             })}
-            {/* Move the action buttons inside the scaling container */}
-            <div className="action-buttons-container">
-              {/* Wrapper for the left-side hex buttons */}
-              <div className="hex-buttons-wrapper">
-                <div className="action-row">
-                  {['SCALE UP', 'METRICS', 'BRANCH'].map((action) => {
-                    const Icon = iconMap[action].icon;
-                    return (
-                      <button
-                        key={action}
-                        className={`hex-btn ${action === 'SCALE UP' ? 'scale-up-btn' : ''}`}
-                        disabled={!isRunning}
-                        onClick={() => handleAction(action)}
-                      >
-                        <Icon className="btn-icon" />
-                        {action}
-                      </button>
-                    )
-                  })}
-                </div>
-                <div className="action-row">
-                  {['SCALE DOWN', 'PROFILE', 'MERGE'].map((action) => {
-                    const Icon = iconMap[action].icon;
-                    const isProfileButton = action === 'PROFILE';
-                    const isProfileDisabled = isProfileActive || profileCooldown;
-                    return (
-                      <button
-                        key={action}
-                        className={`hex-btn ${
-                          action === 'SCALE DOWN' ? 'scale-down-btn' : ''
-                        } ${
-                          isProfileButton && isProfileActive ? 'profile-active-btn' : ''
-                        }`}
-                        disabled={!isRunning || (isProfileButton && isProfileDisabled)}
-                        onClick={() => handleAction(action)}
-                      >
-                        <Icon className="btn-icon" />
-                        {isProfileButton && (isProfileActive || profileCooldown) ? `${profileTimer}s` : action}
-                      </button>
-                    )
-                  })}
-                </div>
+          </div>
+          {/* Move the action buttons OUTSIDE the scaled/absolute div, as the last child of .game-area */}
+          <div className="action-buttons-container flex-action-row">
+            <div className="action-grid">
+              <div className="action-row">
+                {['SCALE UP', 'METRICS', 'BRANCH'].map((action) => {
+                  const Icon = iconMap[action].icon;
+                  return (
+                    <button
+                      key={action}
+                      className={`hex-btn ${action === 'SCALE UP' ? 'scale-up-btn' : ''}`}
+                      disabled={!isRunning}
+                      onClick={() => handleAction(action)}
+                    >
+                      <Icon className="btn-icon" />
+                      {action}
+                    </button>
+                  )
+                })}
               </div>
-              {/* The new, large CODE button */}
+              <div className="action-row">
+                {['SCALE DOWN', 'PROFILE', 'MERGE'].map((action) => {
+                  const Icon = iconMap[action].icon;
+                  const isProfileButton = action === 'PROFILE';
+                  const isProfileDisabled = isProfileActive || profileCooldown;
+                  return (
+                    <button
+                      key={action}
+                      className={`hex-btn ${
+                        action === 'SCALE DOWN' ? 'scale-down-btn' : ''
+                      } ${
+                        isProfileButton && isProfileActive ? 'profile-active-btn' : ''
+                      }`}
+                      disabled={!isRunning || (isProfileButton && isProfileDisabled)}
+                      onClick={() => handleAction(action)}
+                    >
+                      <Icon className="btn-icon" />
+                      {isProfileButton && (isProfileActive || profileCooldown) ? `${profileTimer}s` : action}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+            <div className="code-btn-wrapper">
               <button
                 className="code-btn"
                 disabled={!isRunning}
