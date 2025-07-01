@@ -129,6 +129,15 @@ function App() {
     setCliLines(prevLines => [...prevLines, ...newLines]);
   };
 
+  // Helper to animate CLI output line by line
+  const animateCliLines = async (lines: string[], delay: number = 200) => {
+    for (const line of lines) {
+      addCliLines([line]);
+      // eslint-disable-next-line no-await-in-loop
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
+  };
+
   // Effect to pause game when modal opens and manage body class for scrolling
   useEffect(() => {
     if (isHelpModalOpen) {
@@ -293,89 +302,151 @@ function App() {
       // 1. Immediately set the building state for UI feedback
       setTasks(current => current.map(t => t.id === task.id ? { ...t, isBuilding: true } : t));
       
-      // 2. Add realistic CLI lines for the action
-      switch(action) {
-        case 'BRANCH': addCliLines([`upsun environment:branch feature-${task.id}`, 'Building environment...']); break;
-        case 'MERGE': addCliLines([`upsun environment:merge feature-${task.id}`, 'Deploying environment...']); break;
-        case 'SCALE UP': addCliLines(['upsun resources:set --count frontend:6', 'Scaling resources...']); break;
-        case 'SCALE DOWN': addCliLines(['upsun resources:set --count frontend:3', 'Scaling resources...']); break;
-        case 'METRICS': addCliLines(['upsun metrics:all --live', 'Analyzing metrics...']); break;
-      }
-
-      // 3. After a delay, perform the actual action and add success message
-      setTimeout(() => {
-        addCliLines(['Success.']); // Add success message
-        setTasks(current => {
-          const idx = current.findIndex(t => t.id === task.id);
-          if (idx === -1) return current; // Task might have been removed
-
-          const updated = [...current];
-          const taskToUpdate = updated[idx];
-          const newProgress = taskToUpdate.progress + 1;
-          const isComplete = newProgress >= taskToUpdate.requiredActions.length;
-          
-          let newTask = { 
-            ...taskToUpdate,
-            progress: newProgress, 
-            action: isComplete ? '' : taskToUpdate.requiredActions[newProgress],
-            isBuilding: false // Cooldown finished
-          };
-
-          if (action === 'BRANCH') {
-            const nextLane = getNextAvailableLane(updated);
-            newTask = {
-              ...newTask,
-              lane: nextLane,
-              x: getLaneX(nextLane),
-              branchColor: BRANCH_COLORS[nextLane % BRANCH_COLORS.length],
-            };
-            setBranchLines((lines) => [...lines, {
-              id: taskToUpdate.id,
-              fromLane: 0,
-              toLane: nextLane,
-              color: newTask.branchColor,
-              branchY: taskToUpdate.y + BLOCK_SIZE / 2,
-              mergeY: null,
-              currentY: taskToUpdate.y + BLOCK_SIZE / 2,
-              opacity: 1,
-              speed: taskToUpdate.type === 'bug' ? BUG_FALL_SPEED : NORMAL_FALL_SPEED,
-            }]);
-          } else if (action === 'MERGE') {
-            const mergeYPos = taskToUpdate.y + BLOCK_SIZE / 2;
-            newTask = {
-              ...newTask,
-              lane: 0,
-              x: getLaneX(0),
-              isMergingBack: true,
-            };
-            setBranchLines((lines) =>
-              lines.map((line) =>
-                line.id === taskToUpdate.id && line.mergeY === null ? { ...line, mergeY: mergeYPos, currentY: mergeYPos } : line
-              )
-            );
-          }
-
-          // Handle task completion (same as before, just inside the timeout)
-          if (isComplete) {
-            if (action === 'MERGE') {
-              updated[idx] = newTask;
-              setTimeout(() => {
-                setTasks((current) => current.filter((t) => t.id !== taskToUpdate.id));
+      // 2. Animate realistic CLI lines for the action
+      if (action === 'BRANCH') {
+        const branchLines = [
+          `upsun environment:branch feature-${task.id}`,
+          'Validating submodules',
+          'Validating configuration files',
+          'Configuring resources',
+          `  Using resources from environment 'main'`,
+          `Building application 'app' (runtime type: nodejs:20)` ,
+          'Generating runtime configuration.',
+          'Executing build hook...',
+          `added ${Math.floor(Math.random()*200+50)} packages, and audited ${Math.floor(Math.random()*200+100)} packages in 4s`,
+          'found 0 vulnerabilities',
+        ];
+        animateCliLines(branchLines).then(() => {
+          setTimeout(() => {
+            addCliLines(['Success.']);
+            setTasks(current => {
+              const idx = current.findIndex(t => t.id === task.id);
+              if (idx === -1) return current;
+              const updated = [...current];
+              const taskToUpdate = updated[idx];
+              const newProgress = taskToUpdate.progress + 1;
+              const isComplete = newProgress >= taskToUpdate.requiredActions.length;
+              let newTask = { 
+                ...taskToUpdate,
+                progress: newProgress, 
+                action: isComplete ? '' : taskToUpdate.requiredActions[newProgress],
+                isBuilding: false
+              };
+              const nextLane = getNextAvailableLane(updated);
+              newTask = {
+                ...newTask,
+                lane: nextLane,
+                x: getLaneX(nextLane),
+                branchColor: BRANCH_COLORS[nextLane % BRANCH_COLORS.length],
+              };
+              setBranchLines((lines) => [...lines, {
+                id: taskToUpdate.id,
+                fromLane: 0,
+                toLane: nextLane,
+                color: newTask.branchColor,
+                branchY: taskToUpdate.y + BLOCK_SIZE / 2,
+                mergeY: null,
+                currentY: taskToUpdate.y + BLOCK_SIZE / 2,
+                opacity: 1,
+                speed: taskToUpdate.type === 'bug' ? BUG_FALL_SPEED : NORMAL_FALL_SPEED,
+              }]);
+              if (isComplete) {
+                updated.splice(idx, 1);
                 setScore((s) => s + (difficulty === 'hard' ? 2 : 1));
-              }, MERGE_ANIMATION_DURATION);
-            } else {
+              } else {
+                updated[idx] = newTask;
+              }
+              return updated;
+            });
+          }, 500);
+        });
+        return;
+      } else if (action === 'MERGE') {
+        const mergeLines = [
+          `upsun environment:merge feature-${task.id}`,
+          'Validating submodules',
+          'Validating configuration files',
+          'Configuring resources',
+          `  Using resources from environment 'main'`,
+          `Deploying application 'app' (runtime type: nodejs:20)` ,
+          'Generating runtime configuration.',
+          'Executing deploy hook...',
+        ];
+        animateCliLines(mergeLines).then(() => {
+          setTimeout(() => {
+            addCliLines(['Success.']);
+            setTasks(current => {
+              const idx = current.findIndex(t => t.id === task.id);
+              if (idx === -1) return current;
+              const updated = [...current];
+              const taskToUpdate = updated[idx];
+              const newProgress = taskToUpdate.progress + 1;
+              const isComplete = newProgress >= taskToUpdate.requiredActions.length;
+              let newTask = { 
+                ...taskToUpdate,
+                progress: newProgress, 
+                action: isComplete ? '' : taskToUpdate.requiredActions[newProgress],
+                isBuilding: false
+              };
+              const mergeYPos = taskToUpdate.y + BLOCK_SIZE / 2;
+              newTask = {
+                ...newTask,
+                lane: 0,
+                x: getLaneX(0),
+                isMergingBack: true,
+              };
+              setBranchLines((lines) =>
+                lines.map((line) =>
+                  line.id === taskToUpdate.id && line.mergeY === null ? { ...line, mergeY: mergeYPos, currentY: mergeYPos } : line
+                )
+              );
+              if (isComplete) {
+                updated[idx] = newTask;
+                setTimeout(() => {
+                  setTasks((current) => current.filter((t) => t.id !== taskToUpdate.id));
+                  setScore((s) => s + (difficulty === 'hard' ? 2 : 1));
+                }, MERGE_ANIMATION_DURATION);
+              } else {
+                updated[idx] = newTask;
+              }
+              return updated;
+            });
+          }, 500);
+        });
+        return;
+      } else {
+        // SCALE UP, SCALE DOWN, METRICS: keep as before
+        switch(action) {
+          case 'SCALE UP': addCliLines(['upsun resources:set --count frontend:6', 'Scaling resources...']); break;
+          case 'SCALE DOWN': addCliLines(['upsun resources:set --count frontend:3', 'Scaling resources...']); break;
+          case 'METRICS': addCliLines(['upsun metrics:all --live', 'Analyzing metrics...']); break;
+        }
+        setTimeout(() => {
+          addCliLines(['Success.']);
+          setTasks(current => {
+            const idx = current.findIndex(t => t.id === task.id);
+            if (idx === -1) return current;
+            const updated = [...current];
+            const taskToUpdate = updated[idx];
+            const newProgress = taskToUpdate.progress + 1;
+            const isComplete = newProgress >= taskToUpdate.requiredActions.length;
+            let newTask = { 
+              ...taskToUpdate,
+              progress: newProgress, 
+              action: isComplete ? '' : taskToUpdate.requiredActions[newProgress],
+              isBuilding: false
+            };
+            if (isComplete) {
               updated.splice(idx, 1);
               setScore((s) => s + (difficulty === 'hard' ? 2 : 1));
+            } else {
+              updated[idx] = newTask;
             }
-          } else {
-            updated[idx] = newTask;
-          }
-
-          return updated;
-        });
-      }, 1000);
-
-      return; // Exit handleAction for these actions
+            return updated;
+          });
+        }, 1000);
+        return;
+      }
     }
 
     // --- Logic for non-cooldown actions (e.g., CODE) ---
