@@ -11,6 +11,13 @@ import {
   UserCircleIcon,
   QuestionMarkCircleIcon, // Import the icon for the help button
 } from '@heroicons/react/24/solid'
+import {
+  initialTutorialState,
+  getDialogForStage,
+  shouldAdvanceStage,
+  nextStage,
+} from './StoryMode';
+import type { TutorialStage, TutorialProgress, TutorialState } from './StoryMode';
 
 const BLOCK_SIZE = 50
 const NORMAL_FALL_SPEED = 0.5; // pixels per frame
@@ -204,6 +211,22 @@ function App() {
       } else if (profileCooldown) {
         // Cooldown ended
         setProfileCooldown(false);
+        // Only increment profiler progress after first cooldown in stage 3
+        setTutorial((s) => {
+          if (
+            s.mode &&
+            s.stage === 3 &&
+            !s.profilerCycleComplete &&
+            s.progress.profiler === 0
+          ) {
+            return {
+              ...s,
+              progress: { ...s.progress, profiler: 1 },
+              profilerCycleComplete: true,
+            };
+          }
+          return s;
+        });
       }
     }
 
@@ -271,14 +294,61 @@ function App() {
     return () => clearInterval(interval)
   }, [isRunning])
 
-  // Spawn new tasks at intervals
+  // Story mode state (single object)
+  const [tutorial, setTutorial] = useState<TutorialState>(() => {
+    // Check localStorage for tutorial completion
+    if (typeof window !== 'undefined' && localStorage.getItem('tutorialCompleted') === 'true') {
+      return { ...initialTutorialState, mode: false, dialog: null, paused: false };
+    }
+    return initialTutorialState;
+  });
+
+  // Track if the game was running before story dialog
+  const wasRunningBeforeStory = useRef(false);
+
+  // Story mode: control which tasks spawn
   useEffect(() => {
-    if (!isRunning) return;
+    if (!isRunning || (tutorial.mode && tutorial.paused)) return;
     const currentSpawnInterval = difficulty === 'hard' ? spawnInterval / 2 : spawnInterval;
     const interval = setInterval(() => {
       setTasks((prev) => {
-        const { type, requiredActions, totalClicks } = getRandomTaskTypeAndActions();
-        // Always spawn in production lane (0)
+        let type: 'feature' | 'bug' | 'traffic' = 'feature';
+        let requiredActions: string[] = ['BRANCH', 'CODE', 'MERGE'];
+        let totalClicks = Math.floor(Math.random() * 9) + 2;
+        if (tutorial.mode) {
+          if (tutorial.stage === 1) {
+            // Only features
+            type = 'feature';
+            requiredActions = ['BRANCH', 'CODE', 'MERGE'];
+          } else if (tutorial.stage === 2) {
+            // Features and bugs
+            type = Math.random() < 0.5 ? 'feature' : 'bug';
+            requiredActions = ['BRANCH', 'CODE', 'MERGE'];
+          } else if (tutorial.stage === 3) {
+            // Features, bugs, profiler enabled
+            type = Math.random() < 0.5 ? 'feature' : 'bug';
+            requiredActions = ['BRANCH', 'CODE', 'MERGE'];
+          } else if (tutorial.stage === 4) {
+            // All types
+            const r = Math.random();
+            if (r < 0.4) {
+              type = 'feature';
+              requiredActions = ['BRANCH', 'CODE', 'MERGE'];
+            } else if (r < 0.7) {
+              type = 'bug';
+              requiredActions = ['BRANCH', 'CODE', 'MERGE'];
+            } else {
+              type = 'traffic';
+              requiredActions = ['METRICS', Math.random() < 0.5 ? 'SCALE UP' : 'SCALE DOWN'];
+            }
+          }
+        } else {
+          // Normal game
+          const t = getRandomTaskTypeAndActions();
+          type = t.type;
+          requiredActions = t.requiredActions;
+          totalClicks = t.totalClicks || totalClicks;
+        }
         return [
           ...prev,
           {
@@ -292,13 +362,49 @@ function App() {
             lane: 0,
             branchColor: BRANCH_COLORS[0],
             totalClicks: totalClicks,
-            clicks: 0, // Initialize clicks
+            clicks: 0,
           },
         ];
       });
     }, currentSpawnInterval);
     return () => clearInterval(interval);
-  }, [isRunning, difficulty, spawnInterval]);
+  }, [isRunning, difficulty, spawnInterval, tutorial.mode, tutorial.stage, tutorial.paused]);
+
+  // Tutorial mode: track progress and advance stages
+  useEffect(() => {
+    if (!tutorial.mode) return;
+    if (shouldAdvanceStage(tutorial.stage, tutorial.progress)) {
+      const next = nextStage(tutorial.stage);
+      setTutorial((s) => ({
+        ...s,
+        paused: true,
+        dialog: getDialogForStage(next, s.progress),
+        stage: next,
+      }));
+    }
+  }, [tutorial.stage, tutorial.progress, tutorial.mode]);
+
+  // Pause/resume game when tutorial dialog opens/closes
+  useEffect(() => {
+    if (!tutorial.mode) return;
+    if (tutorial.dialog) {
+      wasRunningBeforeStory.current = isRunning;
+      setIsRunning(false);
+    } else if (!tutorial.dialog && tutorial.paused === false && wasRunningBeforeStory.current) {
+      setIsRunning(true);
+    }
+  }, [tutorial.dialog, tutorial.mode, tutorial.paused, isRunning]);
+
+  // Tutorial mode: handle dialog continue
+  const handleTutorialContinue = () => {
+    if (tutorial.stage === 5) {
+      setTutorial((s) => ({ ...s, mode: false, dialog: null, paused: false }));
+      setIsRunning(true);
+      return;
+    }
+    setTutorial((s) => ({ ...s, dialog: null, paused: false }));
+    setIsRunning(true);
+  };
 
   // Reset game
   const handleReset = () => {
@@ -324,6 +430,9 @@ function App() {
 
   // Handle action button press
   const handleAction = (action: string) => {
+    // In story mode, pause input if dialog is up
+    if (tutorial.mode && tutorial.paused) return;
+
     if (!isRunning) return;
 
     // --- Handle Profile Boost Activation (must be checked before finding a task) ---
@@ -357,6 +466,35 @@ function App() {
     }
     // Reset wrong presses on any correct action
     setWrongPresses(0);
+
+    // Story mode: track progress
+    if (tutorial.mode) {
+      if (tutorial.stage === 1 && action === 'MERGE') {
+        setTutorial((s) => ({ ...s, progress: { ...s.progress, features: s.progress.features + 1 } }));
+      } else if (tutorial.stage === 2) {
+        if (action === 'MERGE' && tasks[taskIndex].type === 'feature') {
+          setTutorial((s) => ({ ...s, progress: { ...s.progress, features: s.progress.features + 1 } }));
+        } else if (action === 'MERGE' && tasks[taskIndex].type === 'bug') {
+          setTutorial((s) => ({ ...s, progress: { ...s.progress, bugs: s.progress.bugs + 1 } }));
+        }
+      } else if (tutorial.stage === 3) {
+        if (action === 'MERGE' && tasks[taskIndex].type === 'feature') {
+          setTutorial((s) => ({ ...s, progress: { ...s.progress, features: s.progress.features + 1 } }));
+        } else if (action === 'MERGE' && tasks[taskIndex].type === 'bug') {
+          setTutorial((s) => ({ ...s, progress: { ...s.progress, bugs: s.progress.bugs + 1 } }));
+        }
+      } else if (tutorial.stage === 4) {
+        if (action === 'MERGE' && tasks[taskIndex].type === 'feature') {
+          setTutorial((s) => ({ ...s, progress: { ...s.progress, features: s.progress.features + 1 } }));
+        } else if (action === 'MERGE' && tasks[taskIndex].type === 'bug') {
+          setTutorial((s) => ({ ...s, progress: { ...s.progress, bugs: s.progress.bugs + 1 } }));
+        } else if (action === 'PROFILE') {
+          setTutorial((s) => s.progress.profiler === 0 ? { ...s, progress: { ...s.progress, profiler: 1 } } : s);
+        } else if ((action === 'SCALE UP' || action === 'SCALE DOWN') && tasks[taskIndex].type === 'traffic') {
+          setTutorial((s) => ({ ...s, progress: { ...s.progress, infra: s.progress.infra + 1 } }));
+        }
+      }
+    }
 
     const task = tasks[taskIndex];
 
@@ -612,9 +750,71 @@ function App() {
   // Show the full CLI history in the background, building up from the bottom
   const bgLines = cliLines;
 
+  // Track if tutorial has been completed
+  const [tutorialCompleted, setTutorialCompleted] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('tutorialCompleted') === 'true';
+    }
+    return false;
+  });
+
+  // When tutorial is skipped or completed, set localStorage
+  useEffect(() => {
+    if (!tutorial.mode) {
+      setTutorialCompleted(true);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('tutorialCompleted', 'true');
+      }
+    }
+  }, [tutorial.mode]);
+
   return (
     <div className="game-bg" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
       <HelpModal isOpen={isHelpModalOpen} onClose={() => setIsHelpModalOpen(false)} />
+      {/* Story Mode Dialog */}
+      {tutorial.mode && tutorial.dialog && (
+        <div className="modal-overlay" style={{ zIndex: 2000 }}>
+          <div className="modal-content" style={{ maxWidth: 400, textAlign: 'center' }}>
+            <h2>Tutorial Mode</h2>
+            {tutorial.dialog}
+            <div style={{ marginTop: 16 }}>
+              <button className="restart-btn" onClick={handleTutorialContinue}>Continue</button>
+              {/* Skip tutorial button only on first dialog */}
+              {tutorial.stage === 1 && (
+                <button
+                  className="restart-btn"
+                  style={{ marginLeft: 8, background: '#444', color: '#fff', border: '1px solid #888' }}
+                  onClick={() => {
+                    setTutorial((s) => ({ ...s, mode: false, dialog: null, paused: false }));
+                    setIsRunning(true);
+                  }}
+                >
+                  Skip tutorial
+                </button>
+              )}
+            </div>
+            {/* For testing: skip stage link in every dialog */}
+            <div style={{ marginTop: 8 }}>
+              <a
+                href="#"
+                style={{ color: '#7c3aed', fontSize: 14, textDecoration: 'underline', cursor: 'pointer' }}
+                onClick={(e) => {
+                  e.preventDefault();
+                  const next = nextStage(tutorial.stage);
+                  setTutorial((s) => ({
+                    ...s,
+                    paused: true,
+                    dialog: getDialogForStage(next, s.progress),
+                    stage: next,
+                  }));
+                }}
+              >
+                Skip this stage
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Game Title at the very top */}
       <div className="game-title-top">
         {/* Difficulty Toggle Button */}
@@ -625,7 +825,19 @@ function App() {
         >
           {difficulty === 'easy' ? 'Easy' : 'Hard'} Mode
         </button>
-        
+        {/* Show Tutorial button under difficulty toggle */}
+        {tutorialCompleted && !tutorial.mode && (
+          <button
+            className="restart-btn"
+            style={{ background: '#7c3aed', color: '#fff', border: '1px solid #888', fontSize: 14, padding: '6px 14px', marginLeft: 12 }}
+            onClick={() => {
+              setTutorial({ ...initialTutorialState });
+              setIsRunning(false);
+            }}
+          >
+            Show Tutorial
+          </button>
+        )}
         <span>Upsun Run</span>
 
         {/* Container for top-right buttons */}
