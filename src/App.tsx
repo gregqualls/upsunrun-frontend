@@ -378,7 +378,7 @@ function App() {
       setTutorial((s: TutorialState) => ({
         ...s,
         paused: true,
-        dialog: getDialogForStage(next, s.progress),
+        dialog: getDialogForStage(next),
         stage: next,
       }));
     }
@@ -788,7 +788,7 @@ function App() {
                   setTutorial((s: TutorialState) => ({
                     ...s,
                     paused: true,
-                    dialog: getDialogForStage(next, s.progress),
+                    dialog: getDialogForStage(next),
                     stage: next,
                   }));
                 }}
