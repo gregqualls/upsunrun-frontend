@@ -8,6 +8,7 @@ declare module 'howler' {
     volume(vol: number, id?: number | string): void;
     fade(from: number, to: number, duration: number, id?: number | string): void;
     loop(loop?: boolean, id?: number | string): void;
+    playing(id?: number | string): boolean;
     // Add more methods as needed
   }
   export const Howler: any;
