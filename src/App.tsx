@@ -752,6 +752,15 @@ function App() {
     }
   }, [tutorial.mode]);
 
+  // Add state to track if a task is near the danger zone
+  const [dangerActive, setDangerActive] = useState(false);
+
+  useEffect(() => {
+    // Check if any task is past the halfway point
+    const halfway = VIRTUAL_HEIGHT / 2;
+    setDangerActive(tasks.some(task => task.y + 44 > halfway));
+  }, [tasks]);
+
   return (
     <div className="game-bg" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
       <HelpModal isOpen={isHelpModalOpen} onClose={() => setIsHelpModalOpen(false)} />
@@ -852,6 +861,34 @@ function App() {
               height={VIRTUAL_HEIGHT}
               style={{ position: 'absolute', left: 0, top: 0, pointerEvents: 'none', zIndex: 0 }}
             >
+              {/* Add a red gradient area before the game over line, and a solid red area after */}
+              <defs>
+                <linearGradient id="gameOverGradient" x1="0" y1={VIRTUAL_HEIGHT - 320} x2="0" y2={VIRTUAL_HEIGHT - 100} gradientUnits="userSpaceOnUse">
+                  <stop offset="0%" stopColor="rgba(239,68,68,0)" />
+                  <stop offset="100%" stopColor="rgba(239,68,68,0.55)" />
+                </linearGradient>
+                <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="12" result="coloredBlur"/>
+                  <feMerge>
+                    <feMergeNode in="coloredBlur"/>
+                    <feMergeNode in="SourceGraphic"/>
+                  </feMerge>
+                </filter>
+              </defs>
+              {/* Gradient area before the game over line, animated opacity and glow */}
+              <rect x="0" y={VIRTUAL_HEIGHT - 320} width={VIRTUAL_WIDTH} height={220} fill="url(#gameOverGradient)"
+                opacity={dangerActive ? 1 : 0}
+                filter={dangerActive ? 'url(#glow)' : undefined}
+                className={dangerActive ? 'danger-pulse' : ''}
+                style={{ transition: 'opacity 0.5s' }}
+              />
+              {/* Solid (but transparent) red area after the game over line, animated opacity and glow */}
+              <rect x="0" y={VIRTUAL_HEIGHT - 100} width={VIRTUAL_WIDTH} height={100} fill="rgba(239,68,68,0.55)"
+                opacity={dangerActive ? 1 : 0}
+                filter={dangerActive ? 'url(#glow)' : undefined}
+                className={dangerActive ? 'danger-pulse' : ''}
+                style={{ transition: 'opacity 0.5s' }}
+              />
               {branchLines.map((line) => (
                 <path
                   key={line.id}
