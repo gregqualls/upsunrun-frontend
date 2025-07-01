@@ -18,7 +18,7 @@ import {
   nextStage,
 } from './StoryMode';
 import type { TutorialState } from './StoryMode';
-import { Howl, Howler } from 'howler';
+import { Howl } from 'howler';
 import successSoundSrc from './assets/sounds/short-success-sound-glockenspiel-treasure-video-game-6346.mp3';
 import startSoundSrc from './assets/sounds/game-start-6104.mp3';
 import bgMusicSrc from './assets/sounds/8bit-music-for-game-68698.mp3';
@@ -843,7 +843,7 @@ function App() {
                 <button
                   className="restart-btn"
                   style={{ marginLeft: 8, background: '#444', color: '#fff', border: '1px solid #888' }}
-                  onClick={(e) => {
+                  onClick={() => {
                     setTutorial((s: TutorialState) => ({ ...s, mode: false, dialog: null, paused: false }));
                     setIsRunning(true);
                   }}
