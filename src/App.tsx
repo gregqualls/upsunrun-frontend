@@ -18,6 +18,13 @@ import {
   nextStage,
 } from './StoryMode';
 import type { TutorialState } from './StoryMode';
+import { Howl, Howler } from 'howler';
+import successSoundSrc from './assets/sounds/short-success-sound-glockenspiel-treasure-video-game-6346.mp3';
+import startSoundSrc from './assets/sounds/game-start-6104.mp3';
+import bgMusicSrc from './assets/sounds/8bit-music-for-game-68698.mp3';
+import gameOverSoundSrc from './assets/sounds/videogame-death-sound-43894.mp3';
+import profileSoundSrc from './assets/sounds/power-up-game-sound-effect-359227.mp3';
+import wrongActionSoundSrc from './assets/sounds/hurt_c_08-102842.mp3';
 
 const BLOCK_SIZE = 50
 const NORMAL_FALL_SPEED = 0.5; // pixels per frame
@@ -105,6 +112,14 @@ function getNextAvailableLane(tasks: Task[]): number {
   while (lanes.includes(lane)) lane++
   return lane
 }
+
+// Sound objects
+const successSound = new Howl({ src: [successSoundSrc], volume: 1 });
+const startSound = new Howl({ src: [startSoundSrc], volume: 1 });
+const bgMusic = new Howl({ src: [bgMusicSrc], volume: 0.25, loop: true });
+const gameOverSound = new Howl({ src: [gameOverSoundSrc], volume: 1 });
+const profileSound = new Howl({ src: [profileSoundSrc], volume: 1 });
+const wrongActionSound = new Howl({ src: [wrongActionSoundSrc], volume: 1 });
 
 function App() {
   // Each task: { id, x, y, action, type, requiredActions, progress }
@@ -761,6 +776,57 @@ function App() {
     setDangerActive(tasks.some(task => task.y + 44 > halfway));
   }, [tasks]);
 
+  // Play start sound and music on game start/restart
+  useEffect(() => {
+    if (gameHasStarted && isRunning && !gameOver) {
+      startSound.play();
+      if (!bgMusic.playing()) bgMusic.play();
+    }
+  }, [gameHasStarted, isRunning, gameOver]);
+
+  // Pause/stop music on pause or game over
+  useEffect(() => {
+    if (!isRunning || gameOver) {
+      bgMusic.pause();
+    } else if (isRunning && !bgMusic.playing()) {
+      bgMusic.play();
+    }
+  }, [isRunning, gameOver]);
+
+  // Play success sound when a point is earned
+  const prevScore = useRef(score);
+  useEffect(() => {
+    if (score > prevScore.current) {
+      successSound.play();
+    }
+    prevScore.current = score;
+  }, [score]);
+
+  // Play game over sound when gameOver becomes true
+  useEffect(() => {
+    if (gameOver) {
+      gameOverSound.play();
+    }
+  }, [gameOver]);
+
+  // Play profile sound when PROFILE is activated
+  const prevProfileActive = useRef(isProfileActive);
+  useEffect(() => {
+    if (isProfileActive && !prevProfileActive.current) {
+      profileSound.play();
+    }
+    prevProfileActive.current = isProfileActive;
+  }, [isProfileActive]);
+
+  // Play wrong action sound when wrongGlow is triggered
+  const prevWrongGlow = useRef(wrongGlow);
+  useEffect(() => {
+    if (wrongGlow && !prevWrongGlow.current) {
+      wrongActionSound.play();
+    }
+    prevWrongGlow.current = wrongGlow;
+  }, [wrongGlow]);
+
   return (
     <div className="game-bg" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
       <HelpModal isOpen={isHelpModalOpen} onClose={() => setIsHelpModalOpen(false)} />
@@ -777,7 +843,7 @@ function App() {
                 <button
                   className="restart-btn"
                   style={{ marginLeft: 8, background: '#444', color: '#fff', border: '1px solid #888' }}
-                  onClick={() => {
+                  onClick={(e) => {
                     setTutorial((s: TutorialState) => ({ ...s, mode: false, dialog: null, paused: false }));
                     setIsRunning(true);
                   }}
