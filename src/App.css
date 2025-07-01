@@ -125,6 +125,16 @@ body {
   box-shadow: 0 0 24px #222, inset 0 0 15px 5px rgba(16, 185, 129, 0.6); /* Inner green glow */
 }
 
+.game-area.wrong-glow {
+  box-shadow: 0 0 32px 8px #ef4444, 0 0 24px #222;
+  animation: wrong-glow-fade 0.3s linear;
+}
+
+@keyframes wrong-glow-fade {
+  0% { box-shadow: 0 0 48px 16px #ef4444, 0 0 24px #222; }
+  100% { box-shadow: 0 0 32px 8px #ef4444, 0 0 24px #222; }
+}
+
 .action-buttons-container {
   width: 100%;
   padding: 16px 0 24px 0;

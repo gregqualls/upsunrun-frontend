@@ -15,7 +15,8 @@ import {
 const BLOCK_SIZE = 50
 const NORMAL_FALL_SPEED = 0.5; // pixels per frame
 const BUG_FALL_SPEED = 0.75;  // bugs fall 50% faster
-const SPAWN_INTERVAL = 4800 // ms
+const BASE_SPAWN_INTERVAL = 4800; // ms
+const MIN_SPAWN_INTERVAL = 900; // ms
 const MERGE_ANIMATION_DURATION = 350; // ms
 
 // Virtual game area for consistent gameplay
@@ -104,6 +105,7 @@ function App() {
   const [isRunning, setIsRunning] = useState(false); // Game doesn't start automatically
   const [gameOver, setGameOver] = useState(false)
   const [score, setScore] = useState(0)
+  const [spawnInterval, setSpawnInterval] = useState(BASE_SPAWN_INTERVAL);
   const gameRef = useRef<HTMLDivElement>(null)
   const nextTaskId = useRef(0)
   const [animatingTaskId, setAnimatingTaskId] = useState<number | null>(null)
@@ -213,6 +215,14 @@ function App() {
     };
   }, [isRunning, profileTimer, isProfileActive, profileCooldown]);
 
+  // Decrease spawn interval every 10 points
+  useEffect(() => {
+    const decrease = Math.floor(score / 10);
+    let newInterval = BASE_SPAWN_INTERVAL * Math.pow(0.9, decrease); // 10% faster every 10 points
+    if (newInterval < MIN_SPAWN_INTERVAL) newInterval = MIN_SPAWN_INTERVAL;
+    setSpawnInterval(newInterval);
+  }, [score]);
+
   // Animate falling tasks and scrolling branch lines
   useEffect(() => {
     if (!isRunning) return
@@ -263,11 +273,11 @@ function App() {
 
   // Spawn new tasks at intervals
   useEffect(() => {
-    if (!isRunning) return
-    const currentSpawnInterval = difficulty === 'hard' ? SPAWN_INTERVAL / 2 : SPAWN_INTERVAL;
+    if (!isRunning) return;
+    const currentSpawnInterval = difficulty === 'hard' ? spawnInterval / 2 : spawnInterval;
     const interval = setInterval(() => {
       setTasks((prev) => {
-        const { type, requiredActions, totalClicks } = getRandomTaskTypeAndActions()
+        const { type, requiredActions, totalClicks } = getRandomTaskTypeAndActions();
         // Always spawn in production lane (0)
         return [
           ...prev,
@@ -284,11 +294,11 @@ function App() {
             totalClicks: totalClicks,
             clicks: 0, // Initialize clicks
           },
-        ]
-      })
-    }, currentSpawnInterval)
-    return () => clearInterval(interval)
-  }, [isRunning, difficulty])
+        ];
+      });
+    }, currentSpawnInterval);
+    return () => clearInterval(interval);
+  }, [isRunning, difficulty, spawnInterval]);
 
   // Reset game
   const handleReset = () => {
@@ -306,6 +316,12 @@ function App() {
     setIsRunning(true);
   };
 
+  // Track consecutive wrong presses
+  const [wrongPresses, setWrongPresses] = useState(0);
+
+  // Red glow state for wrong action
+  const [wrongGlow, setWrongGlow] = useState(false);
+
   // Handle action button press
   const handleAction = (action: string) => {
     if (!isRunning) return;
@@ -319,8 +335,28 @@ function App() {
       return; // Profile action is handled, exit.
     }
 
+    // Find the first task that is not building
     const taskIndex = tasks.findIndex((task) => !task.isBuilding && task.requiredActions[task.progress] === action);
-    if (taskIndex === -1) return;
+    // If no matching task, penalize the player (but ignore CODE action)
+    if (taskIndex === -1) {
+      if (action !== 'CODE') {
+        setWrongPresses((prev) => {
+          if (prev < 2) {
+            setScore((s) => Math.max(0, s - 1));
+            addCliLines([`Error: '${action}' is not the correct action! -1 point`]);
+            setWrongGlow(true);
+            setTimeout(() => setWrongGlow(false), 300);
+            return prev + 1;
+          } else {
+            // Ignore further wrong presses until a correct action
+            return prev;
+          }
+        });
+      }
+      return;
+    }
+    // Reset wrong presses on any correct action
+    setWrongPresses(0);
 
     const task = tasks[taskIndex];
 
@@ -610,7 +646,7 @@ function App() {
         <div className="game-score">Score: {score}</div>
         <div
           ref={gameRef}
-          className={`game-area ${isProfileActive ? 'profile-active' : ''}`}
+          className={`game-area${isProfileActive ? ' profile-active' : ''}${wrongGlow ? ' wrong-glow' : ''}`}
           style={{ position: 'relative' }}
         >
           <div style={{ position: 'absolute', inset: 0, transform: `scale(${scale})`, transformOrigin: 'top left', width: VIRTUAL_WIDTH, height: VIRTUAL_HEIGHT, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
