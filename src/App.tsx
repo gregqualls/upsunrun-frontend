@@ -18,6 +18,10 @@ const BUG_FALL_SPEED = 0.75;  // bugs fall 50% faster
 const SPAWN_INTERVAL = 4800 // ms
 const MERGE_ANIMATION_DURATION = 350; // ms
 
+// Virtual game area for consistent gameplay
+const VIRTUAL_WIDTH = 450;
+const VIRTUAL_HEIGHT = 900;
+
 // Define Task type
 interface Task {
   id: number
@@ -83,7 +87,7 @@ function hexToRgba(hex: string, alpha: number) {
 }
 
 function getLaneX(lane: number) {
-  return LANE_START_X + lane * LANE_WIDTH
+  return LANE_START_X + lane * LANE_WIDTH;
 }
 
 function getNextAvailableLane(tasks: Task[]): number {
@@ -137,6 +141,29 @@ function App() {
       await new Promise((resolve) => setTimeout(resolve, delay));
     }
   };
+
+  // New state for game area size
+  const [gameAreaSize, setGameAreaSize] = useState({ width: VIRTUAL_WIDTH, height: VIRTUAL_HEIGHT });
+
+  // Calculate scale factor for rendering
+  useEffect(() => {
+    function updateSize() {
+      if (gameRef.current) {
+        const rect = gameRef.current.getBoundingClientRect();
+        // Fit to aspect ratio, but never exceed VIRTUAL_WIDTH/VIRTUAL_HEIGHT
+        let width = rect.width;
+        let height = rect.height;
+        setGameAreaSize({ width, height });
+      }
+    }
+    updateSize();
+    window.addEventListener('resize', updateSize);
+    return () => window.removeEventListener('resize', updateSize);
+  }, []);
+
+  const scaleX = gameAreaSize.width / VIRTUAL_WIDTH;
+  const scaleY = gameAreaSize.height / VIRTUAL_HEIGHT;
+  const scale = Math.min(scaleX, scaleY);
 
   // Effect to pause game when modal opens and manage body class for scrolling
   useEffect(() => {
@@ -586,112 +613,158 @@ function App() {
           className={`game-area ${isProfileActive ? 'profile-active' : ''}`}
           style={{ position: 'relative' }}
         >
-          <CliDisplay lines={bgLines} isBackground />
-          {/* SVG for branch lines */}
-          <svg
-            width={gameAreaWidth}
-            height={gameAreaHeight}
-            style={{ position: 'absolute', left: 0, top: 0, pointerEvents: 'none', zIndex: 0 }}
-          >
-            {branchLines.map((line) => (
-              <path
-                key={line.id}
-                d={getBranchLinePath(line)}
-                stroke={line.color}
-                strokeWidth={6}
-                fill="none"
-                opacity={line.opacity !== undefined ? line.opacity : 0.7}
-                style={{ transition: 'opacity 0.3s' }}
-                strokeLinecap="round"
-              />
-            ))}
-          </svg>
-          {/* Render branch/production lines for each lane (background, optional) */}
-          {Array.from({ length: maxLane + 1 }).map((_, laneIdx) => {
-            // Find a task in this lane to get its color, default to production color
-            const taskInLane = tasks.find(t => t.lane === laneIdx)
-            const color = taskInLane ? taskInLane.branchColor : BRANCH_COLORS[laneIdx % BRANCH_COLORS.length]
-            return (
-              <div
-                key={laneIdx}
-                style={{
-                  position: 'absolute',
-                  left: getLaneX(laneIdx) + BLOCK_SIZE / 2 - 4, // center line under block
-                  top: 0,
-                  width: 8,
-                  height: gameAreaHeight,
-                  background: color,
-                  borderRadius: 4,
-                  opacity: 0.15,
-                  zIndex: 0,
-                }}
-              />
-            )
-          })}
-          {/* Render all falling tasks */}
-          {tasks.map((task) => {
-            let style: React.CSSProperties = {
-              left: getLaneX(task.lane),
-              top: task.y,
-              zIndex: 1,
-            };
-
-            // New logic for CODE task background color
-            const isCodeTask = task.requiredActions[task.progress] === 'CODE' && task.totalClicks && task.clicks !== undefined;
-            if (isCodeTask) {
-              const color = task.type === 'feature' ? '#10b981' : '#ef4444'; // green for feature, red for bug
-              const alpha = 0.2 + (task.clicks! / task.totalClicks!) * 0.8; // Fade from 0.2 to 1.0
-              style.backgroundColor = hexToRgba(color, alpha);
-            }
-
-            // New: Dynamic color for traffic tasks
-            if (task.type === 'traffic') {
-              const currentAction = task.requiredActions[task.progress];
-              const actionInfo = iconMap[currentAction];
-              if (currentAction.startsWith('SCALE') && actionInfo?.color) {
-                style.backgroundColor = actionInfo.color; // Set background from map
-              } else {
-                style.backgroundColor = '#2563eb'; // Blue for metrics
+          <div style={{ position: 'absolute', inset: 0, transform: `scale(${scale})`, transformOrigin: 'top left', width: VIRTUAL_WIDTH, height: VIRTUAL_HEIGHT, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
+            <CliDisplay lines={bgLines} isBackground />
+            {/* SVG for branch lines */}
+            <svg
+              width={VIRTUAL_WIDTH}
+              height={VIRTUAL_HEIGHT}
+              style={{ position: 'absolute', left: 0, top: 0, pointerEvents: 'none', zIndex: 0 }}
+            >
+              {branchLines.map((line) => (
+                <path
+                  key={line.id}
+                  d={getBranchLinePath(line)}
+                  stroke={line.color}
+                  strokeWidth={6}
+                  fill="none"
+                  opacity={line.opacity !== undefined ? line.opacity : 0.7}
+                  style={{ transition: 'opacity 0.3s' }}
+                  strokeLinecap="round"
+                />
+              ))}
+            </svg>
+            {/* Render branch/production lines for each lane (background, optional) */}
+            {Array.from({ length: maxLane + 1 }).map((_, laneIdx) => {
+              const taskInLane = tasks.find(t => t.lane === laneIdx)
+              const color = taskInLane ? taskInLane.branchColor : BRANCH_COLORS[laneIdx % BRANCH_COLORS.length]
+              return (
+                <div
+                  key={laneIdx}
+                  style={{
+                    position: 'absolute',
+                    left: getLaneX(laneIdx) + BLOCK_SIZE / 2 - 4,
+                    top: 0,
+                    width: 8,
+                    height: VIRTUAL_HEIGHT,
+                    background: color,
+                    borderRadius: 4,
+                    opacity: 0.15,
+                    zIndex: 0,
+                  }}
+                />
+              )
+            })}
+            {/* Render all falling tasks */}
+            {tasks.map((task) => {
+              let style: React.CSSProperties = {
+                left: getLaneX(task.lane),
+                top: task.y,
+                zIndex: 1,
+              };
+              const isCodeTask = task.requiredActions[task.progress] === 'CODE' && task.totalClicks && task.clicks !== undefined;
+              if (isCodeTask) {
+                const color = task.type === 'feature' ? '#10b981' : '#ef4444';
+                const alpha = 0.2 + (task.clicks! / task.totalClicks!) * 0.8;
+                style.backgroundColor = hexToRgba(color, alpha);
               }
-            }
-
-            const isBuilding = task.isBuilding;
-            const currentAction = task.requiredActions[task.progress];
-
-            return (
-              <div
-                key={task.id}
-                className={`task-block ${task.type} ${task.type === 'traffic' ? currentAction : ''} ${animatingTaskId === task.id ? 'task-animating' : ''} ${isBuilding ? 'task-building' : ''}`}
-                style={style}
-              >
-                <div className="task-type">{task.type.toUpperCase()}</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  {isBuilding && currentAction === 'BRANCH' && 'BUILDING...'}
-                  {isBuilding && currentAction === 'MERGE' && 'MERGING...'}
-                  {isBuilding && (currentAction === 'SCALE UP' || currentAction === 'SCALE DOWN') && 'SCALING...'}
-                  {isBuilding && currentAction === 'METRICS' && 'ANALYZING...'}
-                  
-                  {!isBuilding && (() => {
-                    const actionInfo = iconMap[currentAction];
-                    if (actionInfo && (currentAction.startsWith('SCALE'))) {
-                      const Icon = actionInfo.icon;
-                      return (
-                        <>
-                          <Icon className="task-action-icon" />
-                          <span>{currentAction}</span>
-                        </>
-                      )
-                    }
-                    return currentAction;
-                  })()}
+              if (task.type === 'traffic') {
+                const currentAction = task.requiredActions[task.progress];
+                const actionInfo = iconMap[currentAction];
+                if (currentAction.startsWith('SCALE') && actionInfo?.color) {
+                  style.backgroundColor = actionInfo.color;
+                } else {
+                  style.backgroundColor = '#2563eb';
+                }
+              }
+              const isBuilding = task.isBuilding;
+              const currentAction = task.requiredActions[task.progress];
+              return (
+                <div
+                  key={task.id}
+                  className={`task-block ${task.type} ${task.type === 'traffic' ? currentAction : ''} ${animatingTaskId === task.id ? 'task-animating' : ''} ${isBuilding ? 'task-building' : ''}`}
+                  style={style}
+                >
+                  <div className="task-type">{task.type.toUpperCase()}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    {isBuilding && currentAction === 'BRANCH' && 'BUILDING...'}
+                    {isBuilding && currentAction === 'MERGE' && 'MERGING...'}
+                    {isBuilding && (currentAction === 'SCALE UP' || currentAction === 'SCALE DOWN') && 'SCALING...'}
+                    {isBuilding && currentAction === 'METRICS' && 'ANALYZING...'}
+                    {!isBuilding && (() => {
+                      const actionInfo = iconMap[currentAction];
+                      if (actionInfo && (currentAction.startsWith('SCALE'))) {
+                        const Icon = actionInfo.icon;
+                        return (
+                          <>
+                            <Icon className="task-action-icon" />
+                            <span>{currentAction}</span>
+                          </>
+                        )
+                      }
+                      return currentAction;
+                    })()}
+                  </div>
+                  {/* Hide progress text for multi-click CODE tasks and building tasks */}
+                  {!isCodeTask && !isBuilding && (
+                    <div className="task-progress">{task.progress+1}/{task.requiredActions.length}</div>
+                  )}
                 </div>
-                {/* Hide progress text for multi-click CODE tasks and building tasks */}
-                {!isCodeTask && !isBuilding && (
-                  <div className="task-progress">{task.progress+1}/{task.requiredActions.length}</div>
-                )}
+              )
+            })}
+            {/* Move the action buttons inside the scaling container */}
+            <div className="action-buttons-container">
+              {/* Wrapper for the left-side hex buttons */}
+              <div className="hex-buttons-wrapper">
+                <div className="action-row">
+                  {['SCALE UP', 'METRICS', 'BRANCH'].map((action) => {
+                    const Icon = iconMap[action].icon;
+                    return (
+                      <button
+                        key={action}
+                        className={`hex-btn ${action === 'SCALE UP' ? 'scale-up-btn' : ''}`}
+                        disabled={!isRunning}
+                        onClick={() => handleAction(action)}
+                      >
+                        <Icon className="btn-icon" />
+                        {action}
+                      </button>
+                    )
+                  })}
+                </div>
+                <div className="action-row">
+                  {['SCALE DOWN', 'PROFILE', 'MERGE'].map((action) => {
+                    const Icon = iconMap[action].icon;
+                    const isProfileButton = action === 'PROFILE';
+                    const isProfileDisabled = isProfileActive || profileCooldown;
+                    return (
+                      <button
+                        key={action}
+                        className={`hex-btn ${
+                          action === 'SCALE DOWN' ? 'scale-down-btn' : ''
+                        } ${
+                          isProfileButton && isProfileActive ? 'profile-active-btn' : ''
+                        }`}
+                        disabled={!isRunning || (isProfileButton && isProfileDisabled)}
+                        onClick={() => handleAction(action)}
+                      >
+                        <Icon className="btn-icon" />
+                        {isProfileButton && (isProfileActive || profileCooldown) ? `${profileTimer}s` : action}
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
-            )
-          })}
+              {/* The new, large CODE button */}
+              <button
+                className="code-btn"
+                disabled={!isRunning}
+                onClick={() => handleAction('CODE')}
+              >
+                CODE
+              </button>
+            </div>
+          </div>
           {gameOver && (
             <div className="game-over">
               Game Over<br />
@@ -704,59 +777,6 @@ function App() {
             </div>
           )}
         </div>
-      </div>
-      {/* Action buttons at the bottom, two rows */}
-      <div className="action-buttons-container">
-        {/* Wrapper for the left-side hex buttons */}
-        <div className="hex-buttons-wrapper">
-          <div className="action-row">
-            {['SCALE UP', 'METRICS', 'BRANCH'].map((action) => {
-              const Icon = iconMap[action].icon;
-              return (
-                <button
-                  key={action}
-                  className={`hex-btn ${action === 'SCALE UP' ? 'scale-up-btn' : ''}`}
-                  disabled={!isRunning}
-                  onClick={() => handleAction(action)}
-                >
-                  <Icon className="btn-icon" />
-                  {action}
-                </button>
-              )
-            })}
-          </div>
-          <div className="action-row">
-            {['SCALE DOWN', 'PROFILE', 'MERGE'].map((action) => {
-              const Icon = iconMap[action].icon;
-              const isProfileButton = action === 'PROFILE';
-              const isProfileDisabled = isProfileActive || profileCooldown;
-              
-              return (
-                <button
-                  key={action}
-                  className={`hex-btn ${
-                    action === 'SCALE DOWN' ? 'scale-down-btn' : ''
-                  } ${
-                    isProfileButton && isProfileActive ? 'profile-active-btn' : ''
-                  }`}
-                  disabled={!isRunning || (isProfileButton && isProfileDisabled)}
-                  onClick={() => handleAction(action)}
-                >
-                  <Icon className="btn-icon" />
-                  {isProfileButton && (isProfileActive || profileCooldown) ? `${profileTimer}s` : action}
-                </button>
-              )
-            })}
-          </div>
-        </div>
-        {/* The new, large CODE button */}
-        <button
-          className="code-btn"
-          disabled={!isRunning}
-          onClick={() => handleAction('CODE')}
-        >
-          CODE
-        </button>
       </div>
     </div>
   )

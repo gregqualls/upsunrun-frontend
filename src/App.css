@@ -60,21 +60,31 @@ body {
   color: #888;
 }
 
-.game-bg {
-  /* Re-engineered for a consistent phone-like aspect ratio */
-  width: 100%;
-  max-width: 450px; /* A more phone-like max width */
-  aspect-ratio: 9 / 17; /* Enforce a tall aspect ratio */
-  max-height: 95vh; /* Safety to prevent vertical overflow */
-
+.game-bg, .game-area {
+  width: 450px;
+  height: 900px;
+  margin: 0 auto;
+  position: relative;
+  background: #181a20;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 0 24px #222;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: space-between;
-  background: #181a20;
 }
 
-/* Base Styles (Desktop First) */
+@media (max-width: 480px), (max-height: 950px) {
+  .game-bg, .game-area {
+    width: 100vw;
+    height: 100vh;
+    max-width: 450px;
+    max-height: 900px;
+    transform: scale(calc(100vw / 450));
+    transform-origin: top left;
+  }
+}
 
 .game-title-top {
   flex-shrink: 0;
@@ -110,31 +120,42 @@ body {
   font-weight: 700;
 }
 
-.game-area {
-  flex: 1; /* This is the key: makes it fill the .game-content space */
-  position: relative;
-  width: 100%;
-  background: rgba(30,32,40,0.95);
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 0 24px #222;
-  transition: box-shadow 0.3s ease-in-out; /* Smooth transition for the glow */
-}
-
 /* New: Glowing effect for when profile boost is active */
 .game-area.profile-active {
   box-shadow: 0 0 24px #222, inset 0 0 15px 5px rgba(16, 185, 129, 0.6); /* Inner green glow */
 }
 
 .action-buttons-container {
-  flex-shrink: 0;
   width: 100%;
-  /* max-width is no longer needed here */
-  padding: 16px 0;
+  padding: 16px 0 24px 0;
   display: flex;
-  align-items: center; /* This is key to center the code button with the rows */
+  align-items: center;
   justify-content: center;
-  gap: 12px; /* Gap between hex buttons and code button */
+  gap: 12px;
+  background: none;
+  box-sizing: border-box;
+  margin-bottom: 0;
+}
+
+@media (max-width: 480px), (max-height: 950px) {
+  .action-buttons-container {
+    padding: 8px 0 8px 0;
+    margin-bottom: 0;
+  }
+}
+
+.game-area {
+  position: relative;
+  width: 450px;
+  height: 900px;
+  background: rgba(30,32,40,0.95);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 0 24px #222;
+  transition: box-shadow 0.3s ease-in-out;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
 }
 
 .hex-buttons-wrapper {
@@ -266,10 +287,25 @@ body {
   margin-top: 2px;
 }
 
+.game-over {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0,0,0,0.85);
+  border-radius: 16px;
+  padding: 32px 24px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
 .restart-btn {
   margin-top: 12px;
-  padding: 8px 24px;
-  font-size: 1rem;
+  padding: 12px 32px;
+  font-size: 1.2rem;
   border-radius: 8px;
   border: none;
   background: #7c3aed;
@@ -277,6 +313,7 @@ body {
   font-weight: 700;
   cursor: pointer;
   transition: background 0.2s;
+  display: block;
 }
 .restart-btn:hover {
   background: #5b21b6;
@@ -343,21 +380,6 @@ body {
 
 /* Remove all other conflicting media queries and redundant styles */
 /* ... all old, duplicated, and unused styles will be removed ... */
-
-/* Ensure game over and restart buttons are also responsive */
-.game-over {
-  position: absolute;
-  top: 40%;
-  left: 0;
-  width: 100%;
-  color: #fff;
-  font-size: 1.5rem;
-  font-weight: 700;
-  text-align: center;
-  background: rgba(0,0,0,0.5);
-  padding: 16px;
-  border-radius: 8px;
-}
 
 .task-animating {
   animation: bounce 0.2s ease-in-out;
