@@ -17,7 +17,7 @@ import {
   shouldAdvanceStage,
   nextStage,
 } from './StoryMode';
-import type { TutorialStage, TutorialProgress, TutorialState } from './StoryMode';
+import type { TutorialState } from './StoryMode';
 
 const BLOCK_SIZE = 50
 const NORMAL_FALL_SPEED = 0.5; // pixels per frame
@@ -146,7 +146,7 @@ function App() {
   const animateCliLines = async (lines: string[], delay: number = 200) => {
     for (const line of lines) {
       addCliLines([line]);
-      // eslint-disable-next-line no-await-in-loop
+       
       await new Promise((resolve) => setTimeout(resolve, delay));
     }
   };
@@ -160,8 +160,8 @@ function App() {
       if (gameRef.current) {
         const rect = gameRef.current.getBoundingClientRect();
         // Fit to aspect ratio, but never exceed VIRTUAL_WIDTH/VIRTUAL_HEIGHT
-        let width = rect.width;
-        let height = rect.height;
+        const width = rect.width;
+        const height = rect.height;
         setGameAreaSize({ width, height });
       }
     }
@@ -212,7 +212,7 @@ function App() {
         // Cooldown ended
         setProfileCooldown(false);
         // Only increment profiler progress after first cooldown in stage 3
-        setTutorial((s) => {
+        setTutorial((s: TutorialState) => {
           if (
             s.mode &&
             s.stage === 3 &&
@@ -375,7 +375,7 @@ function App() {
     if (!tutorial.mode) return;
     if (shouldAdvanceStage(tutorial.stage, tutorial.progress)) {
       const next = nextStage(tutorial.stage);
-      setTutorial((s) => ({
+      setTutorial((s: TutorialState) => ({
         ...s,
         paused: true,
         dialog: getDialogForStage(next, s.progress),
@@ -398,11 +398,11 @@ function App() {
   // Tutorial mode: handle dialog continue
   const handleTutorialContinue = () => {
     if (tutorial.stage === 5) {
-      setTutorial((s) => ({ ...s, mode: false, dialog: null, paused: false }));
+      setTutorial((s: TutorialState) => ({ ...s, mode: false, dialog: null, paused: false }));
       setIsRunning(true);
       return;
     }
-    setTutorial((s) => ({ ...s, dialog: null, paused: false }));
+    setTutorial((s: TutorialState) => ({ ...s, dialog: null, paused: false }));
     setIsRunning(true);
   };
 
@@ -421,9 +421,6 @@ function App() {
     setGameHasStarted(true);
     setIsRunning(true);
   };
-
-  // Track consecutive wrong presses
-  const [wrongPresses, setWrongPresses] = useState(0);
 
   // Red glow state for wrong action
   const [wrongGlow, setWrongGlow] = useState(false);
@@ -449,49 +446,39 @@ function App() {
     // If no matching task, penalize the player (but ignore CODE action)
     if (taskIndex === -1) {
       if (action !== 'CODE') {
-        setWrongPresses((prev) => {
-          if (prev < 2) {
-            setScore((s) => Math.max(0, s - 1));
-            addCliLines([`Error: '${action}' is not the correct action! -1 point`]);
-            setWrongGlow(true);
-            setTimeout(() => setWrongGlow(false), 300);
-            return prev + 1;
-          } else {
-            // Ignore further wrong presses until a correct action
-            return prev;
-          }
-        });
+        setWrongGlow(true);
+        setTimeout(() => setWrongGlow(false), 300);
       }
       return;
     }
-    // Reset wrong presses on any correct action
-    setWrongPresses(0);
+    // Reset wrong glow on any correct action
+    setWrongGlow(false);
 
     // Story mode: track progress
     if (tutorial.mode) {
       if (tutorial.stage === 1 && action === 'MERGE') {
-        setTutorial((s) => ({ ...s, progress: { ...s.progress, features: s.progress.features + 1 } }));
+        setTutorial((s: TutorialState) => ({ ...s, progress: { ...s.progress, features: s.progress.features + 1 } }));
       } else if (tutorial.stage === 2) {
         if (action === 'MERGE' && tasks[taskIndex].type === 'feature') {
-          setTutorial((s) => ({ ...s, progress: { ...s.progress, features: s.progress.features + 1 } }));
+          setTutorial((s: TutorialState) => ({ ...s, progress: { ...s.progress, features: s.progress.features + 1 } }));
         } else if (action === 'MERGE' && tasks[taskIndex].type === 'bug') {
-          setTutorial((s) => ({ ...s, progress: { ...s.progress, bugs: s.progress.bugs + 1 } }));
+          setTutorial((s: TutorialState) => ({ ...s, progress: { ...s.progress, bugs: s.progress.bugs + 1 } }));
         }
       } else if (tutorial.stage === 3) {
         if (action === 'MERGE' && tasks[taskIndex].type === 'feature') {
-          setTutorial((s) => ({ ...s, progress: { ...s.progress, features: s.progress.features + 1 } }));
+          setTutorial((s: TutorialState) => ({ ...s, progress: { ...s.progress, features: s.progress.features + 1 } }));
         } else if (action === 'MERGE' && tasks[taskIndex].type === 'bug') {
-          setTutorial((s) => ({ ...s, progress: { ...s.progress, bugs: s.progress.bugs + 1 } }));
+          setTutorial((s: TutorialState) => ({ ...s, progress: { ...s.progress, bugs: s.progress.bugs + 1 } }));
         }
       } else if (tutorial.stage === 4) {
         if (action === 'MERGE' && tasks[taskIndex].type === 'feature') {
-          setTutorial((s) => ({ ...s, progress: { ...s.progress, features: s.progress.features + 1 } }));
+          setTutorial((s: TutorialState) => ({ ...s, progress: { ...s.progress, features: s.progress.features + 1 } }));
         } else if (action === 'MERGE' && tasks[taskIndex].type === 'bug') {
-          setTutorial((s) => ({ ...s, progress: { ...s.progress, bugs: s.progress.bugs + 1 } }));
+          setTutorial((s: TutorialState) => ({ ...s, progress: { ...s.progress, bugs: s.progress.bugs + 1 } }));
         } else if (action === 'PROFILE') {
-          setTutorial((s) => s.progress.profiler === 0 ? { ...s, progress: { ...s.progress, profiler: 1 } } : s);
+          setTutorial((s: TutorialState) => s.progress.profiler === 0 ? { ...s, progress: { ...s.progress, profiler: 1 } } : s);
         } else if ((action === 'SCALE UP' || action === 'SCALE DOWN') && tasks[taskIndex].type === 'traffic') {
-          setTutorial((s) => ({ ...s, progress: { ...s.progress, infra: s.progress.infra + 1 } }));
+          setTutorial((s: TutorialState) => ({ ...s, progress: { ...s.progress, infra: s.progress.infra + 1 } }));
         }
       }
     }
@@ -631,7 +618,7 @@ function App() {
             const taskToUpdate = updated[idx];
             const newProgress = taskToUpdate.progress + 1;
             const isComplete = newProgress >= taskToUpdate.requiredActions.length;
-            let newTask = { 
+            const newTask = { 
               ...taskToUpdate,
               progress: newProgress, 
               action: isComplete ? '' : taskToUpdate.requiredActions[newProgress],
@@ -685,7 +672,7 @@ function App() {
       
       const newProgress = task.progress + 1;
       const isComplete = newProgress >= task.requiredActions.length;
-      let newTask = { ...task, progress: newProgress, action: isComplete ? '' : task.requiredActions[newProgress] };
+      const newTask = { ...task, progress: newProgress, action: isComplete ? '' : task.requiredActions[newProgress] };
 
       // Handle task completion for non-merge, non-branch actions
       if (isComplete) {
@@ -701,9 +688,6 @@ function App() {
 
   // Calculate the number of lanes to render lines for
   const maxLane = Math.max(0, ...tasks.map(t => t.lane))
-  // Get the height of the game area for line rendering
-  const gameAreaHeight = gameRef.current?.clientHeight || 500
-  const gameAreaWidth = gameRef.current?.clientWidth || 400
 
   // A single, correct function for the entire git-branch line path.
   function getBranchLinePath(line: BranchLine) {
@@ -785,7 +769,7 @@ function App() {
                   className="restart-btn"
                   style={{ marginLeft: 8, background: '#444', color: '#fff', border: '1px solid #888' }}
                   onClick={() => {
-                    setTutorial((s) => ({ ...s, mode: false, dialog: null, paused: false }));
+                    setTutorial((s: TutorialState) => ({ ...s, mode: false, dialog: null, paused: false }));
                     setIsRunning(true);
                   }}
                 >
@@ -801,7 +785,7 @@ function App() {
                 onClick={(e) => {
                   e.preventDefault();
                   const next = nextStage(tutorial.stage);
-                  setTutorial((s) => ({
+                  setTutorial((s: TutorialState) => ({
                     ...s,
                     paused: true,
                     dialog: getDialogForStage(next, s.progress),
@@ -816,41 +800,40 @@ function App() {
         </div>
       )}
       {/* Game Title at the very top */}
-      <div className="game-title-top">
-        {/* Difficulty Toggle Button */}
-        <button 
-          className="difficulty-btn"
-          onClick={() => setDifficulty(d => d === 'easy' ? 'hard' : 'easy')}
-          disabled={tasks.length > 0 && !gameOver}
-        >
-          {difficulty === 'easy' ? 'Easy' : 'Hard'} Mode
-        </button>
-        {/* Show Tutorial button under difficulty toggle */}
-        {tutorialCompleted && !tutorial.mode && (
-          <button
-            className="restart-btn"
-            style={{ background: '#7c3aed', color: '#fff', border: '1px solid #888', fontSize: 14, padding: '6px 14px', marginLeft: 12 }}
-            onClick={() => {
-              setTutorial({ ...initialTutorialState });
-              setIsRunning(false);
-            }}
+      <div className="game-title-top two-row-header">
+        <div className="header-controls-row centered-controls">
+          <button 
+            className="difficulty-btn sleek-btn"
+            onClick={() => setDifficulty(d => d === 'easy' ? 'hard' : 'easy')}
+            disabled={tasks.length > 0 && !gameOver}
           >
-            Show Tutorial
+            {difficulty === 'easy' ? 'Easy' : 'Hard'} Mode
           </button>
-        )}
-        <span>Upsun Run</span>
-
-        {/* Container for top-right buttons */}
-        <div className="header-buttons">
-          <button onClick={() => setIsHelpModalOpen(true)} className="header-btn">
+          {tutorialCompleted && !tutorial.mode && (
+            <button
+              className="restart-btn sleek-btn"
+              onClick={() => {
+                setTutorial({ ...initialTutorialState });
+                setIsRunning(false);
+              }}
+            >
+              Show Tutorial
+            </button>
+          )}
+          <button onClick={() => setIsHelpModalOpen(true)} className="header-btn sleek-btn">
             <QuestionMarkCircleIcon />
           </button>
           <button
             onClick={() => setIsRunning((r) => !r)}
-            className={`header-btn ${!isRunning ? 'resume-btn' : ''}`}
+            className={`header-btn sleek-btn ${!isRunning ? 'resume-btn' : ''}`}
           >
             {isRunning ? 'Pause' : 'Resume'}
           </button>
+        </div>
+        <div className="header-title-row">
+          <div className="header-title">
+            Upsun <span style={{ fontWeight: 700, letterSpacing: 1 }}>Run</span>
+          </div>
         </div>
       </div>
       {/* Centered game area and score */}
@@ -905,7 +888,7 @@ function App() {
             })}
             {/* Render all falling tasks */}
             {tasks.map((task) => {
-              let style: React.CSSProperties = {
+              const style: React.CSSProperties = {
                 left: getLaneX(task.lane),
                 top: task.y,
                 zIndex: 1,
