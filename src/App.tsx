@@ -834,13 +834,13 @@ function App() {
           <div className="header-title">
             Upsun <span style={{ fontWeight: 700, letterSpacing: 1 }}>Run</span>
           </div>
-        </div>
+      </div>
       </div>
       {/* Centered game area and score */}
       <div className="game-content">
         <div className="game-score">Score: {score}</div>
-        <div
-          ref={gameRef}
+      <div
+        ref={gameRef}
           className={`game-area${isProfileActive ? ' profile-active' : ''}${wrongGlow ? ' wrong-glow' : ''}`}
           style={{ position: 'relative' }}
         >
@@ -872,7 +872,7 @@ function App() {
               return (
                 <div
                   key={laneIdx}
-                  style={{
+        style={{
                     position: 'absolute',
                     left: getLaneX(laneIdx) + BLOCK_SIZE / 2 - 4,
                     top: 0,
@@ -886,7 +886,7 @@ function App() {
                 />
               )
             })}
-            {/* Render all falling tasks */}
+        {/* Render all falling tasks */}
             {tasks.map((task) => {
               const style: React.CSSProperties = {
                 left: getLaneX(task.lane),
@@ -911,8 +911,8 @@ function App() {
               const isBuilding = task.isBuilding;
               const currentAction = task.requiredActions[task.progress];
               return (
-                <div
-                  key={task.id}
+          <div
+            key={task.id}
                   className={`task-block ${task.type} ${task.type === 'traffic' ? currentAction : ''} ${animatingTaskId === task.id ? 'task-animating' : ''} ${isBuilding ? 'task-building' : ''}`}
                   style={style}
                 >
@@ -940,7 +940,7 @@ function App() {
                   {!isCodeTask && !isBuilding && (
                     <div className="task-progress">{task.progress+1}/{task.requiredActions.length}</div>
                   )}
-                </div>
+          </div>
               )
             })}
           </div>
@@ -951,15 +951,15 @@ function App() {
                 {['SCALE UP', 'METRICS', 'BRANCH'].map((action) => {
                   const Icon = iconMap[action].icon;
                   return (
-                    <button
-                      key={action}
+          <button
+            key={action}
                       className={`hex-btn ${action === 'SCALE UP' ? 'scale-up-btn' : ''}`}
-                      disabled={!isRunning}
-                      onClick={() => handleAction(action)}
-                    >
+            disabled={!isRunning}
+            onClick={() => handleAction(action)}
+          >
                       <Icon className="btn-icon" />
-                      {action}
-                    </button>
+            {action}
+          </button>
                   )
                 })}
               </div>
