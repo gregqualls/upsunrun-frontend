@@ -768,7 +768,7 @@ function App() {
                 <button
                   className="restart-btn"
                   style={{ marginLeft: 8, background: '#444', color: '#fff', border: '1px solid #888' }}
-                  onClick={(e) => {
+                  onClick={() => {
                     setTutorial((s: TutorialState) => ({ ...s, mode: false, dialog: null, paused: false }));
                     setIsRunning(true);
                   }}
