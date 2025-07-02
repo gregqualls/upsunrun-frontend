@@ -174,9 +174,6 @@ function App() {
     }
   };
 
-  // New state for game area size
-  const [gameAreaSize, setGameAreaSize] = useState({ width: VIRTUAL_WIDTH, height: VIRTUAL_HEIGHT });
-
   // Calculate scale factor for rendering
   useEffect(() => {
     function updateSize() {
@@ -185,7 +182,6 @@ function App() {
         // Fit to aspect ratio, but never exceed VIRTUAL_WIDTH/VIRTUAL_HEIGHT
         const width = rect.width;
         const height = rect.height;
-        setGameAreaSize({ width, height });
       }
     }
     updateSize();
