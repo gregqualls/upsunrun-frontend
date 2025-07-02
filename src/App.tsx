@@ -195,7 +195,6 @@ function App() {
 
   const scaleX = gameAreaSize.width / VIRTUAL_WIDTH;
   const scaleY = gameAreaSize.height / VIRTUAL_HEIGHT;
-  const scale = Math.min(scaleX, scaleY);
 
   // Effect to pause game when modal opens and manage body class for scrolling
   useEffect(() => {
