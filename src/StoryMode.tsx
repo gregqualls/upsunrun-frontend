@@ -111,7 +111,7 @@ export function shouldAdvanceStage(stage: TutorialStage, progress: TutorialProgr
 export function nextStage(stage: TutorialStage): TutorialStage {
   if (stage < 5) return (stage + 1) as TutorialStage;
   return 5;
-}
+} 
 
 export type { TutorialStage, TutorialProgress, TutorialState };
 export { initialTutorialState }; 

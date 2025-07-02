@@ -29,7 +29,7 @@ import startSoundSrc from './assets/sounds/game-start-6104.mp3';
 import bgMusicSrc from './assets/sounds/8bit-music-for-game-68698.mp3';
 import gameOverSoundSrc from './assets/sounds/videogame-death-sound-43894.mp3';
 import profileSoundSrc from './assets/sounds/power-up-game-sound-effect-359227.mp3';
-import wrongActionSoundSrc from './assets/sounds/hurt_c_08-102842.mp3';
+import wrongActionSoundSrc from './assets/sounds/quack.mp3';
 
 const BLOCK_SIZE = 50
 const NORMAL_FALL_SPEED = 0.5; // pixels per frame
@@ -453,7 +453,7 @@ function App() {
     // In story mode, pause input if dialog is up
     if (tutorial.mode && tutorial.paused) return;
 
-    if (!isRunning) return;
+    if (!isRunning || gameOver) return;
 
     // --- Handle Profile Boost Activation (must be checked before finding a task) ---
     if (action === 'PROFILE') {
@@ -529,6 +529,7 @@ function App() {
         ];
         animateCliLines(branchLines).then(() => {
           setTimeout(() => {
+            if (gameOver) return;
             addCliLines(['Success.']);
             setTasks(current => {
               const idx = current.findIndex(t => t.id === task.id);
@@ -585,6 +586,7 @@ function App() {
         ];
         animateCliLines(mergeLines).then(() => {
           setTimeout(() => {
+            if (gameOver) return;
             addCliLines(['Success.']);
             setTasks(current => {
               const idx = current.findIndex(t => t.id === task.id);
@@ -633,6 +635,7 @@ function App() {
           case 'METRICS': addCliLines(['upsun metrics:all --live', 'Analyzing metrics...']); break;
         }
         setTimeout(() => {
+          if (gameOver) return;
           addCliLines(['Success.']);
           setTasks(current => {
             const idx = current.findIndex(t => t.id === task.id);
@@ -938,7 +941,7 @@ function App() {
           className={`game-area${isProfileActive ? ' profile-active' : ''}${wrongGlow ? ' wrong-glow' : ''}`}
           style={{ position: 'relative' }}
         >
-          <div style={{ position: 'absolute', inset: 0, transform: `scale(${scale})`, transformOrigin: 'top left', width: VIRTUAL_WIDTH, height: VIRTUAL_HEIGHT, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
+          <div style={{ position: 'absolute', inset: 0, transformOrigin: 'top left', width: VIRTUAL_WIDTH, height: VIRTUAL_HEIGHT, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
             <CliDisplay lines={bgLines} isBackground />
             {/* SVG for branch lines */}
             <svg
