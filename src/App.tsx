@@ -9,7 +9,12 @@ import {
   ArrowTrendingUpIcon,
   ArrowTrendingDownIcon,
   UserCircleIcon,
-  QuestionMarkCircleIcon, // Import the icon for the help button
+  QuestionMarkCircleIcon,
+  Bars3Icon,
+  PauseIcon,
+  PlayIcon,
+  AcademicCapIcon,
+  Cog6ToothIcon,
 } from '@heroicons/react/24/solid'
 import {
   initialTutorialState,
@@ -830,6 +835,9 @@ function App() {
     prevWrongGlow.current = wrongGlow;
   }, [wrongGlow]);
 
+  // Hamburger menu state
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
   return (
     <div className="game-bg" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
       <HelpModal isOpen={isHelpModalOpen} onClose={() => setIsHelpModalOpen(false)} />
@@ -878,42 +886,60 @@ function App() {
         </div>
       )}
       {/* Game Title at the very top */}
-      <div className="game-title-top two-row-header">
-        <div className="header-controls-row centered-controls">
-          <button 
-            className="difficulty-btn sleek-btn"
-            onClick={() => setDifficulty(d => d === 'easy' ? 'hard' : 'easy')}
-            disabled={tasks.length > 0 && !gameOver}
-          >
-            {difficulty === 'easy' ? 'Easy' : 'Hard'} Mode
-          </button>
-          {tutorialCompleted && !tutorial.mode && (
-            <button
-              className="restart-btn sleek-btn"
-              onClick={() => {
-                setTutorial({ ...initialTutorialState });
-                setIsRunning(false);
-              }}
-            >
-              Show Tutorial
-            </button>
-          )}
-          <button onClick={() => setIsHelpModalOpen(true)} className="header-btn sleek-btn">
-            <QuestionMarkCircleIcon />
-          </button>
-          <button
-            onClick={() => setIsRunning((r) => !r)}
-            className={`header-btn sleek-btn ${!isRunning ? 'resume-btn' : ''}`}
-          >
-            {isRunning ? 'Pause' : 'Resume'}
-          </button>
+      <div className="sleek-header">
+        {/* Menu button on the left */}
+        <button className="header-btn sleek-btn" style={{minWidth: 44, minHeight: 44, display: 'flex', alignItems: 'center', justifyContent: 'center'}} onClick={() => setIsMenuOpen(true)}>
+          <Bars3Icon style={{width: 28, height: 28}} />
+        </button>
+        {/* Title centered */}
+        <div className="header-title" style={{margin: 0}}>
+          Upsun <span style={{ fontWeight: 700, letterSpacing: 1 }}>Run</span>
         </div>
-        <div className="header-title-row">
-          <div className="header-title">
-            Upsun <span style={{ fontWeight: 700, letterSpacing: 1 }}>Run</span>
+        {/* Play/Pause button on the right */}
+        <button
+          onClick={() => setIsRunning((r) => !r)}
+          className={`header-btn sleek-btn ${!isRunning ? 'resume-btn' : ''}`}
+          style={{minWidth: 44, minHeight: 44, display: 'flex', alignItems: 'center', justifyContent: 'center'}} 
+          aria-label={isRunning ? 'Pause' : 'Resume'}
+        >
+          {isRunning ? <PauseIcon style={{width: 28, height: 28}} /> : <PlayIcon style={{width: 28, height: 28}} />}
+        </button>
+      </div>
+      {/* Hamburger menu modal */}
+      {isMenuOpen && (
+        <div className="modal-overlay" style={{zIndex: 3000}} onClick={() => setIsMenuOpen(false)}>
+          <div className="modal-content" style={{maxWidth: 340, minWidth: 240, margin: '60px auto', textAlign: 'left', position: 'relative'}} onClick={e => e.stopPropagation()}>
+            <button style={{position: 'absolute', top: 10, right: 10}} className="header-btn sleek-btn" onClick={() => setIsMenuOpen(false)} aria-label="Close Menu">✕</button>
+            <h3 style={{margin: '0 0 18px 0', display: 'flex', alignItems: 'center', gap: 8}}><Cog6ToothIcon style={{width: 22, height: 22}} /> Game Settings</h3>
+            <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18}}>
+              <span style={{display: 'flex', alignItems: 'center', gap: 8}}><AcademicCapIcon style={{width: 20, height: 20}} /> Tutorial</span>
+              <label className="switch">
+                <input type="checkbox" checked={tutorial.mode} onChange={e => {
+                  if (e.target.checked) {
+                    setTutorial({ ...initialTutorialState });
+                    setIsRunning(false);
+                  } else {
+                    setTutorial((s: TutorialState) => ({ ...s, mode: false, dialog: null, paused: false }));
+                    setIsRunning(true);
+                  }
+                }} />
+                <span className="slider round"></span>
+              </label>
+            </div>
+            <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18}}>
+              <span style={{display: 'flex', alignItems: 'center', gap: 8}}><ChartBarIcon style={{width: 20, height: 20}} /> Hard Mode</span>
+              <label className="switch">
+                <input type="checkbox" checked={difficulty === 'hard'} disabled={tasks.length > 0 && !gameOver} onChange={e => setDifficulty(e.target.checked ? 'hard' : 'easy')} />
+                <span className="slider round"></span>
+              </label>
+            </div>
+            <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8}}>
+              <span style={{display: 'flex', alignItems: 'center', gap: 8}}><QuestionMarkCircleIcon style={{width: 20, height: 20}} /> Help</span>
+              <button className="sleek-btn" style={{padding: '4px 14px', fontSize: 15}} onClick={() => { setIsHelpModalOpen(true); setIsMenuOpen(false); }}><QuestionMarkCircleIcon style={{width: 18, height: 18, marginRight: 4}} /> Help</button>
+            </div>
           </div>
-      </div>
-      </div>
+        </div>
+      )}
       {/* Centered game area and score */}
       <div className="game-content">
         <div className="game-score">Score: {score}</div>
