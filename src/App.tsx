@@ -152,16 +152,19 @@ function App() {
   // New state for the fake CLI
   const [cliLines, setCliLines] = useState<string[]>(['Welcome to upsun.run!']);
   
-  // Helper to add lines to the CLI output, keeping the full history
+  // Helper to add lines to the CLI output, keeping the full history (limit to 30 lines)
+  const CLI_MAX_LINES = 30;
   const addCliLines = (newLines: string[]) => {
-    setCliLines(prevLines => [...prevLines, ...newLines]);
+    setCliLines(prevLines => {
+      const combined = [...prevLines, ...newLines];
+      return combined.slice(-CLI_MAX_LINES);
+    });
   };
 
   // Helper to animate CLI output line by line
   const animateCliLines = async (lines: string[], delay: number = 200) => {
     for (const line of lines) {
       addCliLines([line]);
-       
       await new Promise((resolve) => setTimeout(resolve, delay));
     }
   };
