@@ -178,8 +178,7 @@ function App() {
   useEffect(() => {
     function updateSize() {
       if (gameRef.current) {
-        const rect = gameRef.current.getBoundingClientRect();
-        // Fit to aspect ratio, but never exceed VIRTUAL_WIDTH/VIRTUAL_HEIGHT
+        // Remove unused: const rect = gameRef.current.getBoundingClientRect();
       }
     }
     updateSize();
