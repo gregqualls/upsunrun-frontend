@@ -193,9 +193,6 @@ function App() {
     return () => window.removeEventListener('resize', updateSize);
   }, []);
 
-  const scaleX = gameAreaSize.width / VIRTUAL_WIDTH;
-  const scaleY = gameAreaSize.height / VIRTUAL_HEIGHT;
-
   // Effect to pause game when modal opens and manage body class for scrolling
   useEffect(() => {
     if (isHelpModalOpen) {
