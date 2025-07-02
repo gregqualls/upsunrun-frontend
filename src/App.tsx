@@ -757,24 +757,6 @@ function App() {
   // Show the full CLI history in the background, building up from the bottom
   const bgLines = cliLines;
 
-  // Track if tutorial has been completed
-  const [tutorialCompleted, setTutorialCompleted] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('tutorialCompleted') === 'true';
-    }
-    return false;
-  });
-
-  // When tutorial is skipped or completed, set localStorage
-  useEffect(() => {
-    if (!tutorial.mode) {
-      setTutorialCompleted(true);
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('tutorialCompleted', 'true');
-      }
-    }
-  }, [tutorial.mode]);
-
   // Add state to track if a task is near the danger zone
   const [dangerActive, setDangerActive] = useState(false);
 
@@ -837,6 +819,14 @@ function App() {
 
   // Hamburger menu state
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  useEffect(() => {
+    if (!tutorial.mode) {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('tutorialCompleted', 'true');
+      }
+    }
+  }, [tutorial.mode]);
 
   return (
     <div className="game-bg" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
