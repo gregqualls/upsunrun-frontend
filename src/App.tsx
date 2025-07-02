@@ -180,8 +180,6 @@ function App() {
       if (gameRef.current) {
         const rect = gameRef.current.getBoundingClientRect();
         // Fit to aspect ratio, but never exceed VIRTUAL_WIDTH/VIRTUAL_HEIGHT
-        const width = rect.width;
-        const height = rect.height;
       }
     }
     updateSize();
