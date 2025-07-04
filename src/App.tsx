@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import './App.css'
-import HelpModal from './HelpModal'; // Import the new modal component
-import CliDisplay from './CliDisplay'; // Import the new CLI component
+import HelpModal from './features/Help/HelpModal';
+import CliDisplay from './components/CliDisplay';
 import {
   ShareIcon,
   ArrowsRightLeftIcon,
@@ -9,20 +9,14 @@ import {
   ArrowTrendingUpIcon,
   ArrowTrendingDownIcon,
   UserCircleIcon,
-  QuestionMarkCircleIcon,
-  Bars3Icon,
-  PauseIcon,
-  PlayIcon,
-  AcademicCapIcon,
-  Cog6ToothIcon,
 } from '@heroicons/react/24/solid'
 import {
   initialTutorialState,
   getDialogForStage,
   shouldAdvanceStage,
   nextStage,
-} from './StoryMode';
-import type { TutorialState } from './StoryMode';
+} from './features/tutorial/tutorial';
+import type { TutorialState } from './features/tutorial/tutorial';
 import { Howl } from 'howler';
 import successSoundSrc from './assets/sounds/short-success-sound-glockenspiel-treasure-video-game-6346.mp3';
 import startSoundSrc from './assets/sounds/game-start-6104.mp3';
@@ -30,6 +24,10 @@ import bgMusicSrc from './assets/sounds/8bit-music-for-game-68698.mp3';
 import gameOverSoundSrc from './assets/sounds/videogame-death-sound-43894.mp3';
 import profileSoundSrc from './assets/sounds/power-up-game-sound-effect-359227.mp3';
 import wrongActionSoundSrc from './assets/sounds/quack.mp3';
+import ActionButtonBar from './components/ActionButtonBar';
+import Header from './components/Header';
+import Menu from './components/Menu';
+import Modal from './components/Modal';
 
 const BLOCK_SIZE = 50
 const NORMAL_FALL_SPEED = 0.5; // pixels per frame
@@ -737,7 +735,7 @@ function App() {
     return path.join(' ');
   }
 
-  const iconMap: { [key: string]: { icon: React.ElementType, color?: string } } = {
+  const iconMap: { [key: string]: { icon: React.ComponentType<{ className?: string }>, color?: string } } = {
     BRANCH: { icon: ShareIcon },
     MERGE: { icon: ArrowsRightLeftIcon },
     'SCALE UP': { icon: ArrowTrendingUpIcon, color: '#10b981' },
@@ -823,105 +821,69 @@ function App() {
   return (
     <div className="game-bg" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
       <HelpModal isOpen={isHelpModalOpen} onClose={() => setIsHelpModalOpen(false)} />
-      {/* Story Mode Dialog */}
-      {tutorial.mode && tutorial.dialog && (
-        <div className="modal-overlay" style={{ zIndex: 2000 }}>
-          <div className="modal-content" style={{ maxWidth: 400, textAlign: 'center' }}>
-            <h2>Tutorial Mode</h2>
-            {tutorial.dialog}
-            <div style={{ marginTop: 16 }}>
-              <button className="restart-btn" onClick={handleTutorialContinue}>Continue</button>
-              {/* Skip tutorial button only on first dialog */}
-              {tutorial.stage === 1 && (
-                <button
-                  className="restart-btn"
-                  style={{ marginLeft: 8, background: '#444', color: '#fff', border: '1px solid #888' }}
-                  onClick={() => {
-                    setTutorial((s: TutorialState) => ({ ...s, mode: false, dialog: null, paused: false }));
-                    setIsRunning(true);
-                  }}
-                >
-                  Skip tutorial
-                </button>
-              )}
-            </div>
-            {/* For testing: skip stage link in every dialog */}
-            <div style={{ marginTop: 8 }}>
-              <a
-                href="#"
-                style={{ color: '#7c3aed', fontSize: 14, textDecoration: 'underline', cursor: 'pointer' }}
-                onClick={(e) => {
-                  e.preventDefault();
-                  const next = nextStage(tutorial.stage);
-                  setTutorial((s: TutorialState) => ({
-                    ...s,
-                    paused: true,
-                    dialog: getDialogForStage(next),
-                    stage: next,
-                  }));
-                }}
-              >
-                Skip this stage
-              </a>
-            </div>
-          </div>
+      <Modal isOpen={tutorial.mode && !!tutorial.dialog} onClose={() => setTutorial((s: TutorialState) => ({ ...s, mode: false, dialog: null, paused: false }))}>
+        <h2>Tutorial Mode</h2>
+        {tutorial.dialog}
+        <div style={{ marginTop: 16 }}>
+          <button className="restart-btn" onClick={handleTutorialContinue}>Continue</button>
+          {tutorial.stage === 1 && (
+            <button
+              className="restart-btn"
+              style={{ marginLeft: 8, background: '#444', color: '#fff', border: '1px solid #888' }}
+              onClick={() => {
+                setTutorial((s: TutorialState) => ({ ...s, mode: false, dialog: null, paused: false }));
+                setIsRunning(true);
+              }}
+            >
+              Skip tutorial
+            </button>
+          )}
         </div>
-      )}
+        <div style={{ marginTop: 8 }}>
+          <a
+            href="#"
+            style={{ color: '#7c3aed', fontSize: 14, textDecoration: 'underline', cursor: 'pointer' }}
+            onClick={(e) => {
+              e.preventDefault();
+              const next = nextStage(tutorial.stage);
+              setTutorial((s: TutorialState) => ({
+                ...s,
+                paused: true,
+                dialog: getDialogForStage(next),
+                stage: next,
+              }));
+            }}
+          >
+            Skip this stage
+          </a>
+        </div>
+      </Modal>
       {/* Game Title at the very top */}
-      <div className="sleek-header">
-        {/* Menu button on the left */}
-        <button className="header-btn sleek-btn" style={{minWidth: 44, minHeight: 44, display: 'flex', alignItems: 'center', justifyContent: 'center'}} onClick={() => setIsMenuOpen(true)}>
-          <Bars3Icon style={{width: 28, height: 28}} />
-        </button>
-        {/* Title centered */}
-        <div className="header-title" style={{margin: 0}}>
-          Upsun <span style={{ fontWeight: 700, letterSpacing: 1 }}>Run</span>
-        </div>
-        {/* Play/Pause button on the right */}
-        <button
-          onClick={() => setIsRunning((r) => !r)}
-          className={`header-btn sleek-btn ${!isRunning ? 'resume-btn' : ''}`}
-          style={{minWidth: 44, minHeight: 44, display: 'flex', alignItems: 'center', justifyContent: 'center'}} 
-          aria-label={isRunning ? 'Pause' : 'Resume'}
-        >
-          {isRunning ? <PauseIcon style={{width: 28, height: 28}} /> : <PlayIcon style={{width: 28, height: 28}} />}
-        </button>
-      </div>
+      <Header
+        isRunning={isRunning}
+        onMenuClick={() => setIsMenuOpen(true)}
+        onPlayPause={() => setIsRunning((r) => !r)}
+        title="Upsun Run"
+      />
       {/* Hamburger menu modal */}
-      {isMenuOpen && (
-        <div className="modal-overlay" style={{zIndex: 3000}} onClick={() => setIsMenuOpen(false)}>
-          <div className="modal-content" style={{maxWidth: 340, minWidth: 240, margin: '60px auto', textAlign: 'left', position: 'relative'}} onClick={e => e.stopPropagation()}>
-            <button style={{position: 'absolute', top: 10, right: 10}} className="header-btn sleek-btn" onClick={() => setIsMenuOpen(false)} aria-label="Close Menu">✕</button>
-            <h3 style={{margin: '0 0 18px 0', display: 'flex', alignItems: 'center', gap: 8}}><Cog6ToothIcon style={{width: 22, height: 22}} /> Game Settings</h3>
-            <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18}}>
-              <span style={{display: 'flex', alignItems: 'center', gap: 8}}><AcademicCapIcon style={{width: 20, height: 20}} /> Tutorial</span>
-              <label className="switch">
-                <input type="checkbox" checked={tutorial.mode} onChange={e => {
-                  if (e.target.checked) {
-                    setTutorial({ ...initialTutorialState });
-                    setIsRunning(false);
-                  } else {
-                    setTutorial((s: TutorialState) => ({ ...s, mode: false, dialog: null, paused: false }));
-                    setIsRunning(true);
-                  }
-                }} />
-                <span className="slider round"></span>
-              </label>
-            </div>
-            <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18}}>
-              <span style={{display: 'flex', alignItems: 'center', gap: 8}}><ChartBarIcon style={{width: 20, height: 20}} /> Hard Mode</span>
-              <label className="switch">
-                <input type="checkbox" checked={difficulty === 'hard'} disabled={tasks.length > 0 && !gameOver} onChange={e => setDifficulty(e.target.checked ? 'hard' : 'easy')} />
-                <span className="slider round"></span>
-              </label>
-            </div>
-            <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8}}>
-              <span style={{display: 'flex', alignItems: 'center', gap: 8}}><QuestionMarkCircleIcon style={{width: 20, height: 20}} /> Help</span>
-              <button className="sleek-btn" style={{padding: '4px 14px', fontSize: 15}} onClick={() => { setIsHelpModalOpen(true); setIsMenuOpen(false); }}><QuestionMarkCircleIcon style={{width: 18, height: 18, marginRight: 4}} /> Help</button>
-            </div>
-          </div>
-      </div>
-      )}
+      <Menu
+        isOpen={isMenuOpen}
+        onClose={() => setIsMenuOpen(false)}
+        tutorialMode={tutorial.mode}
+        onTutorialToggle={(checked) => {
+          if (checked) {
+            setTutorial({ ...initialTutorialState });
+            setIsRunning(false);
+          } else {
+            setTutorial((s: TutorialState) => ({ ...s, mode: false, dialog: null, paused: false }));
+            setIsRunning(true);
+          }
+        }}
+        hardMode={difficulty === 'hard'}
+        onHardModeToggle={(checked) => setDifficulty(checked ? 'hard' : 'easy')}
+        hardModeDisabled={tasks.length > 0 && !gameOver}
+        onHelp={() => { setIsHelpModalOpen(true); setIsMenuOpen(false); }}
+      />
       {/* Centered game area and score */}
       <div className="game-content">
         <div className="game-score">Score: {score}</div>
@@ -1059,57 +1021,14 @@ function App() {
             })}
           </div>
           {/* Move the action buttons OUTSIDE the scaled/absolute div, as the last child of .game-area */}
-          <div className="action-buttons-container flex-action-row">
-            <div className="action-grid">
-              <div className="action-row">
-                {['SCALE UP', 'METRICS', 'BRANCH'].map((action) => {
-                  const Icon = iconMap[action].icon;
-                  return (
-          <button
-            key={action}
-                      className={`hex-btn ${action === 'SCALE UP' ? 'scale-up-btn' : ''}`}
-            disabled={!isRunning}
-            onClick={() => handleAction(action)}
-          >
-                      <Icon className="btn-icon" />
-            {action}
-          </button>
-                  )
-                })}
-              </div>
-              <div className="action-row">
-                {['SCALE DOWN', 'PROFILE', 'MERGE'].map((action) => {
-                  const Icon = iconMap[action].icon;
-                  const isProfileButton = action === 'PROFILE';
-                  const isProfileDisabled = isProfileActive || profileCooldown;
-                  return (
-                    <button
-                      key={action}
-                      className={`hex-btn ${
-                        action === 'SCALE DOWN' ? 'scale-down-btn' : ''
-                      } ${
-                        isProfileButton && isProfileActive ? 'profile-active-btn' : ''
-                      }`}
-                      disabled={!isRunning || (isProfileButton && isProfileDisabled)}
-                      onClick={() => handleAction(action)}
-                    >
-                      <Icon className="btn-icon" />
-                      {isProfileButton && (isProfileActive || profileCooldown) ? `${profileTimer}s` : action}
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-            <div className="code-btn-wrapper">
-              <button
-                className="code-btn"
-                disabled={!isRunning}
-                onClick={() => handleAction('CODE')}
-              >
-                CODE
-              </button>
-            </div>
-          </div>
+          <ActionButtonBar
+            isRunning={isRunning}
+            isProfileActive={isProfileActive}
+            profileCooldown={profileCooldown}
+            profileTimer={profileTimer}
+            handleAction={handleAction}
+            iconMap={iconMap}
+          />
           {gameOver && (
             <div className="game-over">
               Game Over<br />

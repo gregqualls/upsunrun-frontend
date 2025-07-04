@@ -1,6 +1,6 @@
 declare module 'howler' {
   export class Howl {
-    constructor(options: any);
+    constructor(options: unknown);
     play(id?: number | string): number;
     pause(id?: number | string): void;
     stop(id?: number | string): void;
@@ -11,5 +11,5 @@ declare module 'howler' {
     playing(id?: number | string): boolean;
     // Add more methods as needed
   }
-  export const Howler: any;
+  export const Howler: unknown;
 } 
