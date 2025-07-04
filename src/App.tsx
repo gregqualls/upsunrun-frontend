@@ -920,7 +920,7 @@ function App() {
               <button className="sleek-btn" style={{padding: '4px 14px', fontSize: 15}} onClick={() => { setIsHelpModalOpen(true); setIsMenuOpen(false); }}><QuestionMarkCircleIcon style={{width: 18, height: 18, marginRight: 4}} /> Help</button>
             </div>
           </div>
-        </div>
+      </div>
       )}
       {/* Centered game area and score */}
       <div className="game-content">
